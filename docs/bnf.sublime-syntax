@@ -1,0 +1,21 @@
+%YAML 1.2
+---
+name: bnf
+file_extensions: [bnf]
+scope: source.bnf
+
+contexts:
+  main:
+    - match: \b([a-zA-Z_']+)\b (:=|→)
+      captures:
+        1: support.class.bnf
+    - match: \".*?\"
+      scope: string.quoted.double.bnf
+    - match: \#[^\n]*
+      scope: comment.line.bnf
+    - match: ε
+      scope: string.quoted.double.bnf
+    - match: \b[a-z_']+\b
+      scope: constant.language.bnf
+    - match: \b[A-Z_']+\b
+      scope: constant.numeric.bnf
