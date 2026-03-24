@@ -1,4 +1,4 @@
-import { ensureKey } from "kompa"
+import { arrayRemove, ensureKey } from "kompa"
 import { readFile } from "node:fs/promises"
 import { inspect } from "node:util"
 
@@ -247,7 +247,7 @@ void (async () => {
             solution.push(`{${[...finalResult].map(symbolToMath).join(", ")}}`)
             solutions.set(nonTerminal, solution.join(" = "))
             first.set(nonTerminal, finalResult)
-            pending.splice(pending.indexOf(nonTerminal), 1)
+            arrayRemove(pending, nonTerminal)
         }
 
         if (prevSize == pending.length) {
