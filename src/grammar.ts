@@ -1,7 +1,7 @@
-import { arrayRemove, ensureKey } from "kompa"
+import { arrayRemove, EMPTY_SET, ensureKey, iteratorNth, unreachable } from "kompa"
 import { readFile } from "node:fs/promises"
 import { inspect } from "node:util"
-import { debug, error, print } from "./print"
+import { debug, error, info, print } from "./print"
 
 
 export class Parser {
@@ -59,7 +59,7 @@ export class Rule {
 
     protected _first: Set<RuleSymbol> | null = null
 
-    public [inspect.custom]() {
+    public toString() {
         return this.symbols.map(v => v == EPSILON ? (
             "ε"
         ) : typeof v == "string" ? (
@@ -68,13 +68,21 @@ export class Rule {
             JSON.stringify(v.from) + ".." + JSON.stringify(v.to)
         ) : v.name).join(" . ")
     }
+
+    public [inspect.custom]() {
+        return this.toString()
+    }
+
+    constructor(
+        public readonly owner: NonTerminal,
+    ) { }
 }
 
 export class NonTerminal {
     public readonly rules: Rule[] = []
 
     public createRule() {
-        const rule = new Rule()
+        const rule = new Rule(this)
         this.rules.push(rule)
         return rule
     }
@@ -111,7 +119,7 @@ export function parseGrammar(input: string) {
             continue
         }
 
-        if (parser.matches(/\b([a-zA-Z_']+)\b (:=|→)/y)) {
+        if (parser.matches(/([A-Za-z_']+) (:=|→)/y)) {
             nonTerminal = grammar.getNonTerminal(parser.match[1])
             if (rule) rule = null
             continue
@@ -138,10 +146,10 @@ export function parseGrammar(input: string) {
             continue
         }
 
-        if (parser.matches(/\b([A-Za-z_']+)\b/y)) {
+        if (parser.matches(/[A-Za-z_']+/y)) {
             if (nonTerminal == null) throw new Error(`Unexpected symbol at ${parser.index}`)
             rule ??= nonTerminal.createRule()
-            rule.symbols.push(grammar.getNonTerminal(parser.match[1]))
+            rule.symbols.push(grammar.getNonTerminal(parser.match[0]))
             continue
         }
 
@@ -158,22 +166,19 @@ export function parseGrammar(input: string) {
     return grammar
 }
 
-void (async () => {
-    const grammar = parseGrammar(await readFile(process.argv[2], "utf-8"))
-    print(inspect(grammar["_nonTerminals"], false, Infinity, true))
-
-    function formatSymbolAsMath(symbol: RuleSymbol) {
-        if (typeof symbol == "string") {
-            return JSON.stringify(symbol)
-        } else if (symbol == EPSILON) {
-            return "ε"
-        } else if (symbol instanceof NonTerminal) {
-            return JSON.stringify(symbol.name)
-        } else {
-            return JSON.stringify(symbol.from) + ", dots, " + JSON.stringify(symbol.to)
-        }
+function formatSymbolAsMath(symbol: RuleSymbol) {
+    if (typeof symbol == "string") {
+        return JSON.stringify(symbol)
+    } else if (symbol == EPSILON) {
+        return "ε"
+    } else if (symbol instanceof NonTerminal) {
+        return JSON.stringify(symbol.name)
+    } else {
+        return JSON.stringify(symbol.from) + ", dots, " + JSON.stringify(symbol.to)
     }
+}
 
+function getFirstSets(grammar: Grammar) {
     const firstSets = new Map<NonTerminal, Set<RuleSymbol>>()
     const derivationEquations = new Map<NonTerminal, string>()
     const workList = [...grammar.nonTerminals()]
@@ -185,8 +190,8 @@ void (async () => {
             debug("Processing " + currentNT.name)
 
             const discoveredSymbols = new Set<RuleSymbol>()
+            const derivationExpressions = new Set<string>()
 
-            let derivationExpressions = new Set<string>()
             for (const rule of currentNT.rules) {
                 debug("- Rule:", rule)
                 let firstSymbol = rule.symbols[0]
@@ -199,12 +204,12 @@ void (async () => {
                     continue
                 }
 
-                const prefixScan: RuleSymbol[] = []
                 for (const symbol of rule.symbols) {
                     debug("-- Symbol:", formatSymbolAsMath(symbol))
 
                     if (symbol == currentNT) {
                         debug("--- SKIP: Circular reference")
+                        derivationExpressions.add(`cancel(F_1(${formatSymbolAsMath(symbol)}))`)
                         continue
                     }
 
@@ -215,34 +220,32 @@ void (async () => {
                             continue nonTerminalLoop
                         }
 
-                        prefixScan.push(symbol)
                         for (const value of existingFirstSet) discoveredSymbols.add(value)
 
                         if (!existingFirstSet.has(EPSILON)) {
                             debug("--- No epsilon, finish")
+                            derivationExpressions.add(`F_1(${formatSymbolAsMath(symbol)})`)
                             break
                         }
+
+                        derivationExpressions.add(`F_1(${formatSymbolAsMath(symbol)}) "/" {ε}`)
 
                         continue
                     }
 
-                    prefixScan.push(symbol)
+                    derivationExpressions.add(`{${formatSymbolAsMath(symbol)}}`)
                     discoveredSymbols.add(symbol)
                     break
                 }
-
-                prefixScan
-                    .map((v, i, a) => v instanceof NonTerminal ? (
-                        `F_1(${formatSymbolAsMath(v)})${i < a.length - 1 ? " / {ε}" : ""}`
-                    ) : (
-                        `${formatSymbolAsMath(v)}`
-                    ))
-                    .forEach(v => derivationExpressions.add(v))
             }
 
-            derivationEquations.set(currentNT, (
-                [...derivationExpressions].join(" union ") + " = " + `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
-            ))
+            const derivation = [...derivationExpressions].join(" union ")
+            const result = `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
+            if (result == derivation) {
+                derivationEquations.set(currentNT, `${result}`)
+            } else {
+                derivationEquations.set(currentNT, `${derivation} = ${result}`)
+            }
 
             firstSets.set(currentNT, discoveredSymbols)
             arrayRemove(workList, currentNT)
@@ -258,8 +261,148 @@ void (async () => {
         print(`F_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
     }
 
-    if (derivationEquations.size != grammar.size) {
+    return firstSets
+}
+
+
+function getFollowSets(grammar: Grammar, firstSets: Map<NonTerminal, Set<RuleSymbol>>) {
+    const ntReverseIndex = new Map<NonTerminal, Set<Rule>>()
+    for (const nonTerminal of grammar.nonTerminals()) {
+        for (const rule of nonTerminal.rules) {
+            for (const symbol of rule.symbols) {
+                if (symbol instanceof NonTerminal) {
+                    ensureKey(ntReverseIndex, symbol, () => new Set()).add(rule)
+                }
+            }
+        }
+    }
+
+    const startingSymbol = iteratorNth(grammar.nonTerminals())
+    info("Starting symbol: " + startingSymbol.name)
+
+    if (startingSymbol == null) {
+        throw new Error("No starting symbols")
+    }
+
+    const followSets = new Map<NonTerminal, Set<RuleSymbol>>()
+    const derivationEquations = new Map<NonTerminal, string>()
+    const workList = [...grammar.nonTerminals()]
+
+    while (workList.length > 0) {
+        let previousWorkListLength = workList.length
+
+        nonTerminalLoop: for (const currentNT of [...workList]) {
+            const rulesThatProduceThisNT = ntReverseIndex.get(currentNT) ?? EMPTY_SET
+
+            const discoveredSymbols = new Set<RuleSymbol>()
+            const derivationExpressions = new Set<string>()
+
+            if (currentNT == startingSymbol) {
+                discoveredSymbols.add("$")
+                derivationExpressions.add(`{"$"}`)
+            }
+
+            debug("Processing: " + currentNT.name)
+
+            for (const rule of rulesThatProduceThisNT) {
+                debug("- Rule: " + rule)
+                ruleSymbolsLoop: for (let i = 0; i < rule.symbols.length; i++) {
+                    const symbol = rule.symbols[i]
+                    if (symbol != currentNT) continue
+                    debug(`-- At: ${i}`)
+
+                    i++
+                    for (; i < rule.symbols.length; i++) {
+                        const symbol = rule.symbols[i]
+
+                        if (typeof symbol == "string" || symbol instanceof SymbolRange) {
+                            debug("--- Trivial: " + formatSymbolAsMath(symbol))
+                            discoveredSymbols.add(symbol)
+                            derivationExpressions.add(`{${formatSymbolAsMath(symbol)}}`)
+                            continue ruleSymbolsLoop
+                        }
+
+                        if (!(symbol instanceof NonTerminal)) unreachable()
+
+                        debug("--- NT: " + formatSymbolAsMath(symbol))
+
+                        const existingFirstSet = firstSets.get(symbol) ?? unreachable()
+                        for (const v of existingFirstSet) if (v != EPSILON) discoveredSymbols.add(v)
+
+                        if (existingFirstSet.has(EPSILON)) {
+                            debug("---- Has epsilon")
+                            derivationExpressions.add(`F_1(${formatSymbolAsMath(symbol)}) "/" {ε} /* ${rule.toString()} */`)
+                        } else {
+                            debug("---- No epsilon, done")
+                            derivationExpressions.add(`F_1(${formatSymbolAsMath(symbol)}) /* ${rule.toString()} */`)
+                            continue ruleSymbolsLoop
+                        }
+                    }
+
+                    // Reached end of rule, but there is still a possibility of following, so take follow of the rule owner
+                    const ruleOwner = rule.owner
+                    debug("--- Fallback to owner: " + ruleOwner.name)
+                    if (ruleOwner == currentNT) {
+                        debug("---- Recursion")
+                        derivationExpressions.add(`cancel(FO_1(${formatSymbolAsMath(ruleOwner)}))`)
+                        break
+                    }
+                    const ruleOwnerFollowSet = followSets.get(ruleOwner)
+                    if (ruleOwnerFollowSet == null) {
+                        debug("---- Cannot find, abort")
+                        // Wait for the owner's set to be resolved
+                        continue nonTerminalLoop
+                    }
+
+                    derivationExpressions.add(`FO_1(${formatSymbolAsMath(ruleOwner)})`)
+                    for (const v of ruleOwnerFollowSet) discoveredSymbols.add(v)
+                    debug("---- Added")
+
+                    break
+                }
+            }
+
+            const derivation = [...derivationExpressions].join(" union ")
+            const result = `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
+            if (result == derivation) {
+                derivationEquations.set(currentNT, `${result}`)
+            } else {
+                derivationEquations.set(currentNT, `${derivation} = ${result}`)
+            }
+
+            followSets.set(currentNT, discoveredSymbols)
+            arrayRemove(workList, currentNT)
+        }
+
+        if (previousWorkListLength == workList.length) {
+            error("Infinite loop, remaining: " + workList.map(v => v.name).join(", "))
+            break
+        }
+    }
+
+    for (const nonTerminal of grammar.nonTerminals()) {
+        print(`FO_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
+    }
+
+    return followSets
+}
+
+
+void (async () => {
+    const grammar = parseGrammar(await readFile(process.argv[2], "utf-8"))
+    print(inspect(grammar["_nonTerminals"], false, Infinity, true))
+
+    const firstSets = getFirstSets(grammar)
+
+    if (firstSets.size != grammar.size) {
         error("Because FIRST_1 didn't finish, the process cannot continue")
+        return
+    }
+
+    const followSets = getFollowSets(grammar, firstSets)
+
+    if (followSets.size != grammar.size) {
+        error("Because FOLLOW_1 didn't finish, the process cannot continue")
         return
     }
 })()

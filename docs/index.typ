@@ -102,20 +102,41 @@ Množiny $"FIRST"_1$:
 - $F_1("FTP_ADDRESS") = {"f"}$
 - $F_1("TELNET_ADDRESS") = {"t"}$
 - $F_1("MAILTO_ADDRESS") = {"m"}$
-- $F_1("LOGIN") = F_1("HOST_PORT") union F_1("USER") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("HOST_PORT") = F_1("HOSTNAME") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("HOSTNAME") = F_1("XALPHAS") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("PORT") = F_1("DIGITS") = {0, dots, 9}$
-- $F_1("PATH") = F_1("SEGMENT") union {"/"} = {0, dots, 9, a, dots, z, A, dots, Z, ε, "/"}$
-- $F_1("SEARCH") = F_1("XALPHAS") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("USER") = F_1("XALPHAS") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("PASSWORD") = F_1("XALPHAS") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("SEGMENT") = F_1("XALPHAS") union {ε} = {0, dots, 9, a, dots, z, A, dots, Z, ε}$
-- $F_1("XALPHAS") = F_1("XALPHA") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("XALPHA") = F_1("DIGIT") union F_1("ALPHA") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("DIGITS") = F_1("DIGIT") = {0, dots, 9}$
-- $F_1("ALPHA") = {a, dots, z, A, dots, Z}$
-- $F_1("DIGIT") = {0, dots, 9}$
+- $F_1("HOST_PORT") = F_1("HOSTNAME") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("PATH") = F_1("SEGMENT") "/" {ε} union {"/"} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε, "/"}$
+- $F_1("SEARCH") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("LOGIN") = F_1("HOST_PORT") union F_1("USER") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("XALPHAS") = F_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("HOSTNAME") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("USER") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("PASSWORD") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("PORT") = F_1("DIGITS") = {"0", dots, "9"}$
+- $F_1("DIGITS") = F_1("DIGIT") = {"0", dots, "9"}$
+- $F_1("SEGMENT") = F_1("XALPHAS") union {ε} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε}$
+- $F_1("XALPHA") = F_1("ALPHA") union F_1("DIGIT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("DIGIT") = {"0", dots, "9"}$
+- $F_1("ALPHA") = {"A", dots, "Z"} union {"a", dots, "z"} = {"A", dots, "Z", "a", dots, "z"}$
+
+Množiny $"FOLLOW"_1$:
+- $"FO"_1("URL") = {"$"}$
+- $"FO"_1("HTTP_ADDRESS") = "FO"_1("URL") = {"$"}$
+- $"FO"_1("FTP_ADDRESS") = "FO"_1("URL") = {"$"}$
+- $"FO"_1("TELNET_ADDRESS") = "FO"_1("URL") = {"$"}$
+- $"FO"_1("MAILTO_ADDRESS") = "FO"_1("URL") = {"$"}$
+- $"FO"_1("HOST_PORT") = "FO"_1("HTTP_ADDRESS") union {"/"} union {"?"} union "FO"_1("LOGIN") = {"$", "/", "?"}$
+- $"FO"_1("PATH") = "FO"_1("HTTP_ADDRESS") union {"?"} union "FO"_1("FTP_ADDRESS") union cancel("FO"_1("PATH")) = {"$", "?"}$
+- $"FO"_1("SEARCH") = "FO"_1("HTTP_ADDRESS") union cancel("FO"_1("SEARCH")) = {"$"}$
+- $"FO"_1("LOGIN") = {"/"} union "FO"_1("TELNET_ADDRESS") = {"/", "$"}$
+- $"FO"_1("XALPHAS") = {"@"} union "FO"_1("SEARCH") union {"+"} union cancel("FO"_1("XALPHAS")) union "FO"_1("HOSTNAME") union {"."} union "FO"_1("USER") union "FO"_1("PASSWORD") union F_1("SEGMENT") "/" {ε} /* XALPHAS . SEGMENT */ union "FO"_1("SEGMENT") = {"@", "$", "+", "/", "?", ":", ".", "A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $"FO"_1("HOSTNAME") = "FO"_1("MAILTO_ADDRESS") union "FO"_1("HOST_PORT") union {":"} union cancel("FO"_1("HOSTNAME")) = {"$", "/", "?", ":"}$
+- $"FO"_1("USER") = {"@"} union {":"} = {"@", ":"}$
+- $"FO"_1("PASSWORD") = {"@"}$
+- $"FO"_1("PORT") = "FO"_1("HOST_PORT") = {"$", "/", "?"}$
+- $"FO"_1("DIGITS") = "FO"_1("PORT") union cancel("FO"_1("DIGITS")) = {"$", "/", "?"}$
+- $"FO"_1("SEGMENT") = "FO"_1("PATH") union {"/"} union cancel("FO"_1("SEGMENT")) = {"$", "?", "/"}$
+- $"FO"_1("XALPHA") = "FO"_1("XALPHAS") union F_1("XALPHAS") /* XALPHA . XALPHAS */ = {"@", "$", "+", "/", "?", ":", ".", "A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $"FO"_1("DIGIT") = "FO"_1("DIGITS") union F_1("DIGITS") /* DIGIT . DIGITS */ union "FO"_1("XALPHA") = {"$", "/", "?", "0", dots, "9", "@", "+", ":", ".", "A", dots, "Z", "a", dots, "z"}$
+- $"FO"_1("ALPHA") = "FO"_1("XALPHA") = {"@", "$", "+", "/", "?", ":", ".", "A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 
 *Pre $"URL"$*:
 - $F_1("HTTP_ADDRESS") = {"h"}$
