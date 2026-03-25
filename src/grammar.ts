@@ -1,6 +1,7 @@
 import { arrayRemove, ensureKey } from "kompa"
 import { readFile } from "node:fs/promises"
 import { inspect } from "node:util"
+import { debug, error, print } from "./print"
 
 
 export class Parser {
@@ -86,6 +87,7 @@ export class NonTerminal {
 export class Grammar {
     protected readonly _nonTerminals = new Map<string, NonTerminal>()
 
+    public get size() { return this._nonTerminals.size }
     public nonTerminals() { return this._nonTerminals.values() }
 
     public getNonTerminal(name: string) {
@@ -156,11 +158,6 @@ export function parseGrammar(input: string) {
     return grammar
 }
 
-function print(...msgs: any[]) {
-    // oxlint-disable-next-line no-console
-    console.log(...msgs)
-}
-
 void (async () => {
     const grammar = parseGrammar(await readFile(process.argv[2], "utf-8"))
     print(inspect(grammar["_nonTerminals"], false, Infinity, true))
@@ -185,17 +182,17 @@ void (async () => {
         let previousWorkListLength = workList.length
 
         nonTerminalLoop: for (const currentNT of [...workList]) {
-            print("Processing " + currentNT.name)
+            debug("Processing " + currentNT.name)
 
             const discoveredSymbols = new Set<RuleSymbol>()
 
             let derivationExpressions = new Set<string>()
             for (const rule of currentNT.rules) {
-                print("- Rule:", rule)
+                debug("- Rule:", rule)
                 let firstSymbol = rule.symbols[0]
 
                 if (firstSymbol == EPSILON || typeof firstSymbol == "string" || firstSymbol instanceof SymbolRange) {
-                    print("-- Trivial")
+                    debug("-- Trivial")
                     if (typeof firstSymbol == "string") firstSymbol = firstSymbol[0]
                     discoveredSymbols.add(firstSymbol)
                     derivationExpressions.add(`{${formatSymbolAsMath(firstSymbol)}}`)
@@ -204,17 +201,17 @@ void (async () => {
 
                 const prefixScan: RuleSymbol[] = []
                 for (const symbol of rule.symbols) {
-                    print("-- Symbol:", formatSymbolAsMath(symbol))
+                    debug("-- Symbol:", formatSymbolAsMath(symbol))
 
                     if (symbol == currentNT) {
-                        print("--- SKIP: Circular reference")
+                        debug("--- SKIP: Circular reference")
                         continue
                     }
 
                     if (symbol instanceof NonTerminal) {
                         const existingFirstSet = firstSets.get(symbol)
                         if (existingFirstSet == null) {
-                            print("--- ABORT: Cannot find " + symbol.name)
+                            debug("--- ABORT: Cannot find " + symbol.name)
                             continue nonTerminalLoop
                         }
 
@@ -222,7 +219,7 @@ void (async () => {
                         for (const value of existingFirstSet) discoveredSymbols.add(value)
 
                         if (!existingFirstSet.has(EPSILON)) {
-                            print("--- No epsilon, finish")
+                            debug("--- No epsilon, finish")
                             break
                         }
 
@@ -252,12 +249,17 @@ void (async () => {
         }
 
         if (previousWorkListLength == workList.length) {
-            print("Infinite loop, remaining: " + workList.map(v => v.name).join(", "))
+            error("Infinite loop, remaining: " + workList.map(v => v.name).join(", "))
             break
         }
     }
 
     for (const nonTerminal of grammar.nonTerminals()) {
         print(`F_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
+    }
+
+    if (derivationEquations.size != grammar.size) {
+        error("Because FIRST_1 didn't finish, the process cannot continue")
+        return
     }
 })()
