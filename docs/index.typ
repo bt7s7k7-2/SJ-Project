@@ -103,7 +103,7 @@ Množiny $"FIRST"_1$:
 - $F_1("TELNET_ADDRESS") = {"t"}$
 - $F_1("MAILTO_ADDRESS") = {"m"}$
 - $F_1("HOST_PORT") = F_1("HOSTNAME") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
-- $F_1("PATH") = F_1("SEGMENT") "/" {ε} union {"/"} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε, "/"}$
+- $F_1("PATH") = F_1("SEGMENT") union F_1("SEGMENT") "/" {ε} union {"/"} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε, "/"}$
 - $F_1("SEARCH") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1("LOGIN") = F_1("HOST_PORT") union F_1("USER") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1("XALPHAS") = F_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$

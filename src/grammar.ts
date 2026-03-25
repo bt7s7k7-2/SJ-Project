@@ -1,4 +1,4 @@
-import { arrayRemove, EMPTY_SET, ensureKey, iteratorNth, unreachable } from "kompa"
+import { arrayRemove, EMPTY_SET, ensureKey, iPairs, iteratorNth, unreachable } from "kompa"
 import { readFile } from "node:fs/promises"
 import { inspect } from "node:util"
 import { debug, error, info, print } from "./print"
@@ -63,7 +63,11 @@ export class Rule {
         return this.symbols.map(v => v == EPSILON ? (
             "ε"
         ) : typeof v == "string" ? (
-            JSON.stringify(v)
+            v[0] == "\x1b" ? (
+                v.slice(1)
+            ) : (
+                JSON.stringify(v)
+            )
         ) : v instanceof SymbolRange ? (
             JSON.stringify(v.from) + ".." + JSON.stringify(v.to)
         ) : v.name).join(" . ")
@@ -119,7 +123,7 @@ export function parseGrammar(input: string) {
             continue
         }
 
-        if (parser.matches(/([A-Za-z_']+) (:=|→)/y)) {
+        if (parser.matches(/([A-Z_']+) (:=|→)/y)) {
             nonTerminal = grammar.getNonTerminal(parser.match[1])
             if (rule) rule = null
             continue
@@ -139,6 +143,13 @@ export function parseGrammar(input: string) {
             continue
         }
 
+        if (parser.matches(/[a-z]+/y)) {
+            if (nonTerminal == null) throw new Error(`Unexpected symbol at ${parser.index}`)
+            rule ??= nonTerminal.createRule()
+            rule.symbols.push("\x1b" + parser.match[0])
+            continue
+        }
+
         if (parser.matches(/ε/y)) {
             if (nonTerminal == null) throw new Error(`Unexpected symbol at ${parser.index}`)
             rule ??= nonTerminal.createRule()
@@ -146,7 +157,7 @@ export function parseGrammar(input: string) {
             continue
         }
 
-        if (parser.matches(/[A-Za-z_']+/y)) {
+        if (parser.matches(/[A-Z_']+/y)) {
             if (nonTerminal == null) throw new Error(`Unexpected symbol at ${parser.index}`)
             rule ??= nonTerminal.createRule()
             rule.symbols.push(grammar.getNonTerminal(parser.match[0]))
@@ -168,6 +179,9 @@ export function parseGrammar(input: string) {
 
 function formatSymbolAsMath(symbol: RuleSymbol) {
     if (typeof symbol == "string") {
+        if (symbol[0] == "\x1b") {
+            return JSON.stringify(symbol.slice(1))
+        }
         return JSON.stringify(symbol)
     } else if (symbol == EPSILON) {
         return "ε"
@@ -198,20 +212,21 @@ function getFirstSets(grammar: Grammar) {
 
                 if (firstSymbol == EPSILON || typeof firstSymbol == "string" || firstSymbol instanceof SymbolRange) {
                     debug("-- Trivial")
-                    if (typeof firstSymbol == "string") firstSymbol = firstSymbol[0]
+                    if (typeof firstSymbol == "string" && firstSymbol[0] != "\x1b") firstSymbol = firstSymbol[0]
                     discoveredSymbols.add(firstSymbol)
                     derivationExpressions.add(`{${formatSymbolAsMath(firstSymbol)}}`)
                     continue
                 }
 
-                for (const symbol of rule.symbols) {
+                for (const [symbol, i] of iPairs(rule.symbols)) {
                     debug("-- Symbol:", formatSymbolAsMath(symbol))
 
                     if (symbol == currentNT) {
                         debug("--- SKIP: Circular reference")
                         derivationExpressions.add(`cancel(F_1(${formatSymbolAsMath(symbol)}))`)
-                        continue
+                        break
                     }
+
 
                     if (symbol instanceof NonTerminal) {
                         const existingFirstSet = firstSets.get(symbol)
@@ -220,10 +235,11 @@ function getFirstSets(grammar: Grammar) {
                             continue nonTerminalLoop
                         }
 
-                        for (const value of existingFirstSet) discoveredSymbols.add(value)
+                        const isLast = i == rule.symbols.length - 1
+                        for (const value of existingFirstSet) if (isLast || value != EPSILON) discoveredSymbols.add(value)
 
-                        if (!existingFirstSet.has(EPSILON)) {
-                            debug("--- No epsilon, finish")
+                        if (isLast || !existingFirstSet.has(EPSILON)) {
+                            debug("--- No epsilon or last, finish")
                             derivationExpressions.add(`F_1(${formatSymbolAsMath(symbol)})`)
                             break
                         }
@@ -344,7 +360,7 @@ function getFollowSets(grammar: Grammar, firstSets: Map<NonTerminal, Set<RuleSym
                     debug("--- Fallback to owner: " + ruleOwner.name)
                     if (ruleOwner == currentNT) {
                         debug("---- Recursion")
-                        derivationExpressions.add(`cancel(FO_1(${formatSymbolAsMath(ruleOwner)}))`)
+                        derivationExpressions.add(`cancel("FO"_1(${formatSymbolAsMath(ruleOwner)}))`)
                         break
                     }
                     const ruleOwnerFollowSet = followSets.get(ruleOwner)
@@ -354,7 +370,7 @@ function getFollowSets(grammar: Grammar, firstSets: Map<NonTerminal, Set<RuleSym
                         continue nonTerminalLoop
                     }
 
-                    derivationExpressions.add(`FO_1(${formatSymbolAsMath(ruleOwner)})`)
+                    derivationExpressions.add(`"FO"_1(${formatSymbolAsMath(ruleOwner)})`)
                     for (const v of ruleOwnerFollowSet) discoveredSymbols.add(v)
                     debug("---- Added")
 
@@ -381,7 +397,7 @@ function getFollowSets(grammar: Grammar, firstSets: Map<NonTerminal, Set<RuleSym
     }
 
     for (const nonTerminal of grammar.nonTerminals()) {
-        print(`FO_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
+        print(`"FO"_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
     }
 
     return followSets
