@@ -146,11 +146,11 @@ Množiny $"FOLLOW"_1$:
 - #text(olive)[Žiadny konflikt]
 
 *Pre $"HTTP_ADDRESS"$*:
-- $F_1("http:// HOST_PORT") = {"h"}$
-- $F_1("http:// HOST_PORT / PATH") = {"h"}$
-- $F_1("http:// HOST_PORT ? SEARCH") = {"h"}$
-- $F_1("http:// HOST_PORT / PATH ? SEARCH") = {"h"}$
-- #text(red)[$"FIRST"_1$ $"FIRST"_1$ konflikt]
+- $F_1("http://" "HOST_PORT") = {"h"}$
+- $F_1("http://" "HOST_PORT" "/" "PATH") = {"h"}$
+- $F_1("http://" "HOST_PORT" "?" "SEARCH") = {"h"}$
+- $F_1("http://" "HOST_PORT" "/" "PATH" "?" "SEARCH") = {"h"}$
+- #text(red)[Konfliktné symboly:] ${"h"}$
 
 *Pre $"FTP_ADDRESS"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
 
@@ -158,11 +158,65 @@ Množiny $"FOLLOW"_1$:
 
 *Pre $"MAILTO_ADDRESS"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
 
+*Pre $"HOST_PORT"$*:
+- $F_1("HOSTNAME") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("HOSTNAME" ":" "PORT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
+*Pre $"PATH"$*:
+- $F_1("SEGMENT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε}$
+- $F_1("SEGMENT" "/" "PATH") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "/"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
+*Pre $"SEARCH"$*:
+- $F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("XALPHAS" "+" "SEARCH") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
 *Pre $"LOGIN"$*:
-- $F_1("HOST_PORT") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("USER @ HOST_PORT") = F_1("USER") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- $F_1("USER : PASSWORD @ HOST_PORT") = F_1("USER") = {0, dots, 9, a, dots, z, A, dots, Z}$
-- #text(red)[$"FIRST"_1$ $"FIRST"_1$ konflikt]
+- $F_1("HOST_PORT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("USER" "@" "HOST_PORT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("USER" ":" "PASSWORD" "@" "HOST_PORT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
+*Pre $"XALPHAS"$*:
+- $F_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("XALPHA" "XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
+*Pre $"HOSTNAME"$*:
+- $F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("XALPHAS" "." "HOSTNAME") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+
+*Pre $"USER"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"PASSWORD"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"PORT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"DIGITS"$*:
+- $F_1("DIGIT") = {"0", dots, "9"}$
+- $F_1("DIGIT" "DIGITS") = {"0", dots, "9"}$
+- #text(red)[Konfliktné symboly:] ${"0", dots, "9"}$
+
+*Pre $"SEGMENT"$*:
+- $F_1("XALPHAS" "SEGMENT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1(ε) = {ε}$
+- $"FO"_1("SEGMENT") = {"$", "?", "/"}$
+- #text(olive)[Žiadny konflikt]
+
+*Pre $"XALPHA"$*:
+- $F_1("ALPHA") = {"A", dots, "Z", "a", dots, "z"}$
+- $F_1("DIGIT") = {"0", dots, "9"}$
+- #text(olive)[Žiadny konflikt]
+
+*Pre $"DIGIT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"ALPHA"$*:
+- $F_1("A"dots"Z") = {"A", dots, "Z"}$
+- $F_1("a"dots"z") = {"a", dots, "z"}$
+- #text(olive)[Žiadny konflikt]
 
 = Lexikálna analýza
 

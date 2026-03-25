@@ -1,4 +1,4 @@
-import { arrayRemove, EMPTY_SET, ensureKey, iPairs, iteratorNth, unreachable } from "kompa"
+import { arrayRemove, EMPTY_SET, ensureKey, iPairs, iterableSkip, iteratorNth, unreachable } from "kompa"
 import { readFile } from "node:fs/promises"
 import { inspect } from "node:util"
 import { debug, error, info, print } from "./print"
@@ -177,7 +177,7 @@ export function parseGrammar(input: string) {
     return grammar
 }
 
-function formatSymbolAsMath(symbol: RuleSymbol) {
+function formatSymbolAsMath(symbol: RuleSymbol, { noCommas = false } = {}) {
     if (typeof symbol == "string") {
         if (symbol[0] == "\x1b") {
             return JSON.stringify(symbol.slice(1))
@@ -188,7 +188,7 @@ function formatSymbolAsMath(symbol: RuleSymbol) {
     } else if (symbol instanceof NonTerminal) {
         return JSON.stringify(symbol.name)
     } else {
-        return JSON.stringify(symbol.from) + ", dots, " + JSON.stringify(symbol.to)
+        return JSON.stringify(symbol.from) + (noCommas ? "dots" : ", dots, ") + JSON.stringify(symbol.to)
     }
 }
 
@@ -256,7 +256,7 @@ function getFirstSets(grammar: Grammar) {
             }
 
             const derivation = [...derivationExpressions].join(" union ")
-            const result = `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
+            const result = `{${[...discoveredSymbols].map(v => formatSymbolAsMath(v)).join(", ")}}`
             if (result == derivation) {
                 derivationEquations.set(currentNT, `${result}`)
             } else {
@@ -379,7 +379,7 @@ function getFollowSets(grammar: Grammar, firstSets: Map<NonTerminal, Set<RuleSym
             }
 
             const derivation = [...derivationExpressions].join(" union ")
-            const result = `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
+            const result = `{${[...discoveredSymbols].map(v => formatSymbolAsMath(v)).join(", ")}}`
             if (result == derivation) {
                 derivationEquations.set(currentNT, `${result}`)
             } else {
@@ -420,5 +420,72 @@ void (async () => {
     if (followSets.size != grammar.size) {
         error("Because FOLLOW_1 didn't finish, the process cannot continue")
         return
+    }
+
+    for (const currentNT of grammar.nonTerminals()) {
+        if (currentNT.rules.length == 1) {
+            print(`*Pre $"${currentNT.name}"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]`)
+            print("")
+            continue
+        }
+
+        print(`*Pre $"${currentNT.name}"$*:`)
+        let epsilonFault = false
+        const currentSets: Set<RuleSymbol>[] = []
+        for (const rule of currentNT.rules) {
+            const firstSet = new Set<RuleSymbol>()
+
+            for (const symbol of rule.symbols) {
+                if (symbol instanceof NonTerminal) {
+                    const symbolFirst = firstSets.get(symbol) ?? unreachable()
+                    for (const v of symbolFirst) firstSet.add(v)
+
+                    if (!symbolFirst.has(EPSILON)) {
+                        break
+                    }
+                } else if (symbol == EPSILON) {
+                    firstSet.add(symbol)
+                } else {
+                    if (typeof symbol == "string" && symbol[0] != "\x1b") {
+                        firstSet.add(symbol[0])
+                    } else {
+                        firstSet.add(symbol)
+                    }
+                    firstSet.delete(EPSILON)
+                    break
+                }
+            }
+
+            epsilonFault = firstSet.has(EPSILON)
+            currentSets.push(firstSet)
+
+            print(`  - $F_1(${rule.symbols.map(v => formatSymbolAsMath(v, { noCommas: true })).join(" ")}) = {${[...firstSet].map(v => formatSymbolAsMath(v)).join(", ")}}$`)
+        }
+
+        if (epsilonFault) {
+            const followSet = followSets.get(currentNT) ?? unreachable()
+            currentSets.push(followSet)
+            print(`  - $"FO"_1("${currentNT.name}") = {${[...followSet].map(v => formatSymbolAsMath(v)).join(", ")}}$`)
+        }
+
+        let commonSymbols = currentSets[0]
+        let allDuplicates = new Set<RuleSymbol>()
+        for (const set of iterableSkip(currentSets, 1)) {
+            const duplicates = set.intersection(commonSymbols)
+
+            if (duplicates.size > 0) {
+                for (const v of duplicates) allDuplicates.add(v)
+            }
+
+            commonSymbols = commonSymbols.union(set)
+        }
+
+        if (allDuplicates.size > 0) {
+            print(`  - #text(red)[Konfliktné symboly:] \${${[...allDuplicates].map(v => formatSymbolAsMath(v)).join(", ")}}$`)
+        } else {
+            print(`  - #text(olive)[Žiadny konflikt]`)
+        }
+
+        print("")
     }
 })()
