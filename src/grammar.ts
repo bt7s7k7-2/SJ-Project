@@ -165,7 +165,7 @@ void (async () => {
     const grammar = parseGrammar(await readFile(process.argv[2], "utf-8"))
     print(inspect(grammar["_nonTerminals"], false, Infinity, true))
 
-    function symbolToMath(symbol: RuleSymbol) {
+    function formatSymbolAsMath(symbol: RuleSymbol) {
         if (typeof symbol == "string") {
             return JSON.stringify(symbol)
         } else if (symbol == EPSILON) {
@@ -177,55 +177,51 @@ void (async () => {
         }
     }
 
-    const first = new Map<NonTerminal, Set<RuleSymbol>>()
-    const solutions = new Map<NonTerminal, string>()
-    const pending = [...grammar.nonTerminals()]
-    while (true) {
-        let prevSize = pending.length
+    const firstSets = new Map<NonTerminal, Set<RuleSymbol>>()
+    const derivationEquations = new Map<NonTerminal, string>()
+    const workList = [...grammar.nonTerminals()]
 
-        pendingLoop: for (const nonTerminal of [...pending]) {
-            print("Processing " + nonTerminal.name)
-            if (nonTerminal.name == "XALPHA") {
-                // oxlint-disable-next-line no-debugger
-                debugger
-            }
+    while (workList.length > 0) {
+        let previousWorkListLength = workList.length
 
-            let solution: string[] = []
-            const finalResult = new Set<RuleSymbol>()
+        nonTerminalLoop: for (const currentNT of [...workList]) {
+            print("Processing " + currentNT.name)
 
-            let solutionPart = new Set<string>
-            for (const part of nonTerminal.rules) {
-                print("- Rule:", part)
-                let firstSymbol = part.symbols[0]
+            const discoveredSymbols = new Set<RuleSymbol>()
+
+            let derivationExpressions = new Set<string>()
+            for (const rule of currentNT.rules) {
+                print("- Rule:", rule)
+                let firstSymbol = rule.symbols[0]
 
                 if (firstSymbol == EPSILON || typeof firstSymbol == "string" || firstSymbol instanceof SymbolRange) {
                     print("-- Trivial")
                     if (typeof firstSymbol == "string") firstSymbol = firstSymbol[0]
-                    finalResult.add(firstSymbol)
-                    solutionPart.add(`{${symbolToMath(firstSymbol)}}`)
+                    discoveredSymbols.add(firstSymbol)
+                    derivationExpressions.add(`{${formatSymbolAsMath(firstSymbol)}}`)
                     continue
                 }
 
-                const compound: RuleSymbol[] = []
-                for (const symbol of part.symbols) {
-                    print("-- Symbol:", symbolToMath(symbol))
+                const prefixScan: RuleSymbol[] = []
+                for (const symbol of rule.symbols) {
+                    print("-- Symbol:", formatSymbolAsMath(symbol))
 
-                    if (symbol == nonTerminal) {
+                    if (symbol == currentNT) {
                         print("--- SKIP: Circular reference")
                         continue
                     }
 
                     if (symbol instanceof NonTerminal) {
-                        const symbolValue = first.get(symbol)
-                        if (symbolValue == null) {
+                        const existingFirstSet = firstSets.get(symbol)
+                        if (existingFirstSet == null) {
                             print("--- ABORT: Cannot find " + symbol.name)
-                            continue pendingLoop
+                            continue nonTerminalLoop
                         }
 
-                        compound.push(symbol)
-                        for (const value of symbolValue) finalResult.add(value)
+                        prefixScan.push(symbol)
+                        for (const value of existingFirstSet) discoveredSymbols.add(value)
 
-                        if (!symbolValue.has(EPSILON)) {
+                        if (!existingFirstSet.has(EPSILON)) {
                             print("--- No epsilon, finish")
                             break
                         }
@@ -233,34 +229,35 @@ void (async () => {
                         continue
                     }
 
-                    compound.push(symbol)
-                    finalResult.add(symbol)
+                    prefixScan.push(symbol)
+                    discoveredSymbols.add(symbol)
                     break
                 }
 
-                for (const v of compound.map((v, i, a) => v instanceof NonTerminal ? `F_1(${symbolToMath(v)})${i < a.length - 1 ? " / {ε}" : ""}` : `${symbolToMath(v)}`)) {
-                    solutionPart.add(v)
-                }
+                prefixScan
+                    .map((v, i, a) => v instanceof NonTerminal ? (
+                        `F_1(${formatSymbolAsMath(v)})${i < a.length - 1 ? " / {ε}" : ""}`
+                    ) : (
+                        `${formatSymbolAsMath(v)}`
+                    ))
+                    .forEach(v => derivationExpressions.add(v))
             }
 
-            solution.push([...solutionPart].join(" union "))
-            solution.push(`{${[...finalResult].map(symbolToMath).join(", ")}}`)
-            solutions.set(nonTerminal, solution.join(" = "))
-            first.set(nonTerminal, finalResult)
-            arrayRemove(pending, nonTerminal)
+            derivationEquations.set(currentNT, (
+                [...derivationExpressions].join(" union ") + " = " + `{${[...discoveredSymbols].map(formatSymbolAsMath).join(", ")}}`
+            ))
+
+            firstSets.set(currentNT, discoveredSymbols)
+            arrayRemove(workList, currentNT)
         }
 
-        if (prevSize == pending.length) {
-            print("Infinite loop, remaining: " + pending.map(v => v.name).join(", "))
-            break
-        }
-
-        if (pending.length == 0) {
+        if (previousWorkListLength == workList.length) {
+            print("Infinite loop, remaining: " + workList.map(v => v.name).join(", "))
             break
         }
     }
 
     for (const nonTerminal of grammar.nonTerminals()) {
-        print(`F_1(${JSON.stringify(nonTerminal.name)}) = ${solutions.get(nonTerminal) ?? "???"}`)
+        print(`F_1(${JSON.stringify(nonTerminal.name)}) = ${derivationEquations.get(nonTerminal) ?? "???"}`)
     }
 })()
