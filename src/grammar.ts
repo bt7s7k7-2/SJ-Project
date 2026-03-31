@@ -192,7 +192,7 @@ function formatSymbolAsMath(symbol: RuleSymbol, { noCommas = false } = {}) {
     }
 }
 
-function getFirstSets(grammar: Grammar) {
+function getFirstSets(grammar: Grammar, leftRecursion: Set<NonTerminal>) {
     const firstSets = new Map<NonTerminal, Set<RuleSymbol>>()
     const derivationEquations = new Map<NonTerminal, string>()
     const workList = [...grammar.nonTerminals()]
@@ -224,6 +224,7 @@ function getFirstSets(grammar: Grammar) {
                     if (symbol == currentNT) {
                         debug("--- SKIP: Circular reference")
                         derivationExpressions.add(`cancel(F_1(${formatSymbolAsMath(symbol)}))`)
+                        leftRecursion.add(currentNT)
                         break
                     }
 
@@ -408,11 +409,23 @@ void (async () => {
     const grammar = parseGrammar(await readFile(process.argv[2], "utf-8"))
     print(inspect(grammar["_nonTerminals"], false, Infinity, true))
 
-    const firstSets = getFirstSets(grammar)
+    const leftRecursion = new Set<NonTerminal>()
+    const firstSets = getFirstSets(grammar, leftRecursion)
 
     if (firstSets.size != grammar.size) {
         error("Because FIRST_1 didn't finish, the process cannot continue")
         return
+    }
+
+    for (const nt of leftRecursion) {
+        error(`Left recursion in "${nt.name}"`)
+    }
+
+    for (const nonTerminal of grammar.nonTerminals()) {
+        if (firstSets.get(nonTerminal)!.size == 0) {
+            error(`Process cannot continue due to left recursion leaving no possible generation from "${nonTerminal.name}"`)
+            return
+        }
     }
 
     const followSets = getFollowSets(grammar, firstSets)
@@ -482,6 +495,27 @@ void (async () => {
 
         if (allDuplicates.size > 0) {
             print(`  - #text(red)[Konfliktné symboly:] \${${[...allDuplicates].map(v => formatSymbolAsMath(v)).join(", ")}}$`)
+
+            const commonPrefixes = new Set<string>()
+
+            for (const ruleA of currentNT.rules) {
+                for (const ruleB of currentNT.rules) {
+                    if (ruleA == ruleB) continue
+                    let i = 0
+
+                    for (; i < ruleA.symbols.length && i < ruleB.symbols.length; i++) {
+                        if (ruleA.symbols[i] != ruleB.symbols[i]) break
+                    }
+
+                    if (i > 0) {
+                        commonPrefixes.add(ruleA.symbols.slice(0, i).map(v => formatSymbolAsMath(v)).join(" "))
+                    }
+                }
+            }
+
+            for (const commonPrefix of commonPrefixes) {
+                print(`  - #text(red)[Spoločný prefix:] $${commonPrefix}$`)
+            }
         } else {
             print(`  - #text(olive)[Žiadny konflikt]`)
         }
