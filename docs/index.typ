@@ -961,3 +961,23 @@ Lexikálna analýza bude vykonaná cez regex, špecificky jeden sticky regex, kt
 ```js
 /(http:\/\/)|(ftp:\/\/)|(telnet:\/\/)|(mailto:)|([.:?@/+])|([0-9]+[a-z][0-9a-z]*)|([0-9]+)|([a-z][a-z0-9]*)/y
 ```
+
+Podľa toho, ktorá group bude matchnutá, taký token sa vygeneruje.
+
+#text(red)[Add diagram]
+
+== Syntaktická analýza
+
+Kód si načíta prechodovú tabuľku so súboru `table.json`. Program prechádza zoznam tokenov jeden po druhom a pozerá sa na vrchol zásobníka.
+
+Na začiatku na na zásobník hodí znak konca vstupu a následne neterminál vstupného stavu. Potom program postupuje takto:
+
+1. Ak je na zásobníku token taký ako na vstupe, program ho skonzumuje ­— vyhodí ho zo zásobníka a posunie sa na ďalší token vo vstupe.
+2. Inak sa predpokladá sa že na zásobníku je neterminál. Je skontrolovaná tabuľka, a ak to nie je neterminál tak je to nesprávny token a vyhodí sa chyba.
+3. Ak sa v tabuľke nájde neterminál, tak sa podľa tokenu nájde pravidlo
+4. Ak je v tabuľke namiesto čísla pravidla prázdne miesto, vyhodí sa chyba
+5. Zo zásobníka sa vyhodí neterminál
+6. Pravidlo sa aplikuje — na zásobník su pridané symboly produkované pravidlom v opačnom poradí
+7. Proces sa opakuje až kým sa zásobník nevyprázdni
+
+#text(red)[Add diagram]
