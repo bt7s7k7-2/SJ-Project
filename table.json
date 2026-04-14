@@ -1,0 +1,653 @@
+{
+    "symbols": [
+        "http",
+        "ftp",
+        "/",
+        "telnet",
+        "mailto",
+        "@",
+        "?",
+        "text_number",
+        "digits",
+        "text",
+        ":",
+        "+",
+        "."
+    ],
+    "rules": [
+        {
+            "name": "URL → HTTP_ADDRESS",
+            "production": [
+                "HTTP_ADDRESS"
+            ]
+        },
+        {
+            "name": "URL → FTP_ADDRESS",
+            "production": [
+                "FTP_ADDRESS"
+            ]
+        },
+        {
+            "name": "URL → TELNET_ADDRESS",
+            "production": [
+                "TELNET_ADDRESS"
+            ]
+        },
+        {
+            "name": "URL → MAILTO_ADDRESS",
+            "production": [
+                "MAILTO_ADDRESS"
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS → http HOST_PORT HTTP_ADDRESS'",
+            "production": [
+                "http",
+                "HOST_PORT",
+                "HTTP_ADDRESS'"
+            ]
+        },
+        {
+            "name": "FTP_ADDRESS → ftp LOGIN \"/\" PATH",
+            "production": [
+                "ftp",
+                "LOGIN",
+                "/",
+                "PATH"
+            ]
+        },
+        {
+            "name": "TELNET_ADDRESS → telnet LOGIN",
+            "production": [
+                "telnet",
+                "LOGIN"
+            ]
+        },
+        {
+            "name": "MAILTO_ADDRESS → mailto XALPHAS \"@\" HOSTNAME",
+            "production": [
+                "mailto",
+                "XALPHAS",
+                "@",
+                "HOSTNAME"
+            ]
+        },
+        {
+            "name": "HOST_PORT → HOSTNAME HOST_PORT'",
+            "production": [
+                "HOSTNAME",
+                "HOST_PORT'"
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS' → ε",
+            "production": []
+        },
+        {
+            "name": "HTTP_ADDRESS' → \"?\" SEARCH",
+            "production": [
+                "?",
+                "SEARCH"
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS' → \"/\" PATH HTTP_ADDRESS''",
+            "production": [
+                "/",
+                "PATH",
+                "HTTP_ADDRESS''"
+            ]
+        },
+        {
+            "name": "LOGIN → XALPHAS LOGIN'",
+            "production": [
+                "XALPHAS",
+                "LOGIN'"
+            ]
+        },
+        {
+            "name": "PATH → SEGMENT PATH'",
+            "production": [
+                "SEGMENT",
+                "PATH'"
+            ]
+        },
+        {
+            "name": "XALPHAS → text_number",
+            "production": [
+                "text_number"
+            ]
+        },
+        {
+            "name": "XALPHAS → digits",
+            "production": [
+                "digits"
+            ]
+        },
+        {
+            "name": "XALPHAS → text",
+            "production": [
+                "text"
+            ]
+        },
+        {
+            "name": "HOSTNAME → XALPHAS HOSTNAME'",
+            "production": [
+                "XALPHAS",
+                "HOSTNAME'"
+            ]
+        },
+        {
+            "name": "HOST_PORT' → ε",
+            "production": []
+        },
+        {
+            "name": "HOST_PORT' → \":\" PORT",
+            "production": [
+                ":",
+                "PORT"
+            ]
+        },
+        {
+            "name": "SEGMENT → XALPHAS",
+            "production": [
+                "XALPHAS"
+            ]
+        },
+        {
+            "name": "SEGMENT → ε",
+            "production": []
+        },
+        {
+            "name": "PATH' → \"/\" SEGMENT PATH'",
+            "production": [
+                "/",
+                "SEGMENT",
+                "PATH'"
+            ]
+        },
+        {
+            "name": "PATH' → ε",
+            "production": []
+        },
+        {
+            "name": "SEARCH → XALPHAS SEARCH'",
+            "production": [
+                "XALPHAS",
+                "SEARCH'"
+            ]
+        },
+        {
+            "name": "SEARCH' → \"+\" XALPHAS SEARCH'",
+            "production": [
+                "+",
+                "XALPHAS",
+                "SEARCH'"
+            ]
+        },
+        {
+            "name": "SEARCH' → ε",
+            "production": []
+        },
+        {
+            "name": "LOGIN' → ε",
+            "production": []
+        },
+        {
+            "name": "LOGIN' → \"@\" HOST_PORT",
+            "production": [
+                "@",
+                "HOST_PORT"
+            ]
+        },
+        {
+            "name": "LOGIN' → \":\" XALPHAS LOGIN''",
+            "production": [
+                ":",
+                "XALPHAS",
+                "LOGIN''"
+            ]
+        },
+        {
+            "name": "HOSTNAME' → \".\" XALPHAS HOSTNAME'",
+            "production": [
+                ".",
+                "XALPHAS",
+                "HOSTNAME'"
+            ]
+        },
+        {
+            "name": "HOSTNAME' → ε",
+            "production": []
+        },
+        {
+            "name": "PORT → digits",
+            "production": [
+                "digits"
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS'' → ε",
+            "production": []
+        },
+        {
+            "name": "HTTP_ADDRESS'' → \"?\" SEARCH",
+            "production": [
+                "?",
+                "SEARCH"
+            ]
+        },
+        {
+            "name": "LOGIN'' → ε",
+            "production": []
+        },
+        {
+            "name": "LOGIN'' → \"@\" HOST_PORT",
+            "production": [
+                "@",
+                "HOST_PORT"
+            ]
+        }
+    ],
+    "states": [
+        {
+            "name": "URL",
+            "transitions": [
+                0,
+                1,
+                null,
+                2,
+                3,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS",
+            "transitions": [
+                4,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "FTP_ADDRESS",
+            "transitions": [
+                null,
+                5,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "TELNET_ADDRESS",
+            "transitions": [
+                null,
+                null,
+                null,
+                6,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "MAILTO_ADDRESS",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                7,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HOST_PORT",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                8,
+                8,
+                8,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS'",
+            "transitions": [
+                null,
+                null,
+                11,
+                null,
+                null,
+                null,
+                10,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                9
+            ]
+        },
+        {
+            "name": "LOGIN",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                12,
+                12,
+                12,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "PATH",
+            "transitions": [
+                null,
+                null,
+                13,
+                null,
+                null,
+                null,
+                13,
+                13,
+                13,
+                13,
+                null,
+                null,
+                null,
+                13
+            ]
+        },
+        {
+            "name": "XALPHAS",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                14,
+                15,
+                16,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HOSTNAME",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                17,
+                17,
+                17,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HOST_PORT'",
+            "transitions": [
+                null,
+                null,
+                18,
+                null,
+                null,
+                null,
+                18,
+                null,
+                null,
+                null,
+                19,
+                null,
+                null,
+                18
+            ]
+        },
+        {
+            "name": "SEGMENT",
+            "transitions": [
+                null,
+                null,
+                21,
+                null,
+                null,
+                null,
+                21,
+                20,
+                20,
+                20,
+                null,
+                null,
+                null,
+                21
+            ]
+        },
+        {
+            "name": "PATH'",
+            "transitions": [
+                null,
+                null,
+                22,
+                null,
+                null,
+                null,
+                23,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                23
+            ]
+        },
+        {
+            "name": "SEARCH",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                24,
+                24,
+                24,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "SEARCH'",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                25,
+                null,
+                26
+            ]
+        },
+        {
+            "name": "LOGIN'",
+            "transitions": [
+                null,
+                null,
+                27,
+                null,
+                null,
+                28,
+                null,
+                null,
+                null,
+                null,
+                29,
+                null,
+                null,
+                27
+            ]
+        },
+        {
+            "name": "HOSTNAME'",
+            "transitions": [
+                null,
+                null,
+                31,
+                null,
+                null,
+                null,
+                31,
+                null,
+                null,
+                null,
+                31,
+                null,
+                30,
+                31
+            ]
+        },
+        {
+            "name": "PORT",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                32,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS''",
+            "transitions": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                34,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                33
+            ]
+        },
+        {
+            "name": "LOGIN''",
+            "transitions": [
+                null,
+                null,
+                35,
+                null,
+                null,
+                36,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                35
+            ]
+        }
+    ]
+}

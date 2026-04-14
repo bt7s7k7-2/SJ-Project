@@ -1,0 +1,24 @@
+# Valid
+http://google.com
+# Valid
+http://localhost:8080/api/v1?user+login
+# Valid
+ftp://admin:secret@files.net/uploads
+# Valid
+telnet://192.168.1.1
+# Valid
+mailto:john123@work.place.com
+# Valid
+ftp://guest@host/
+# Invalid: Invalid protocol
+https://google.com
+# Invalid: Unsupported character
+http://my-site.com
+# Invalid: Missing / after login in ftp
+ftp://user@host
+# Invalid: Trailing slash not allowed in telnet
+telnet://user:pass@host:port/
+# Invalid: The port rule requires digits, but letters were provided
+http://host:abc
+# Invalid: xalphas requires at least one xalpha character before the @
+mailto:@host.com

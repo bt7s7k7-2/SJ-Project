@@ -6,7 +6,7 @@ scope: source.bnf
 
 contexts:
   main:
-    - match: \b([a-zA-Z_']+)\b (:=|→)
+    - match: \b([a-zA-Z_']+) (:=|→)
       captures:
         1: support.class.bnf
     - match: \".*?\"

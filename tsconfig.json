@@ -1,14 +1,15 @@
 {
     "compilerOptions": {
         "target": "ESNext",
-        "module": "ESNext",
-        "moduleResolution": "node",
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "rewriteRelativeImportExtensions": true,
         "strict": true,
         "jsx": "preserve",
         "sourceMap": true,
         "resolveJsonModule": true,
         "esModuleInterop": true,
-        "declaration": true,
+        "declaration": false,
         "lib": [
             "ESNext",
         ],
@@ -16,11 +17,11 @@
             "node"
         ],
         "useDefineForClassFields": false,
-        "outDir": "dist-types",
-        "emitDeclarationOnly": true,
         "skipLibCheck": true,
         "skipDefaultLibCheck": true,
-        "noImplicitOverride": true
+        "noImplicitOverride": true,
+        "outDir": "build",
+        "rootDir": "src",
     },
     "include": [
         "src/**/*.ts",
