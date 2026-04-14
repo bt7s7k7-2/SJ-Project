@@ -11,8 +11,8 @@
         "digits",
         "text",
         ":",
-        "+",
-        "."
+        ".",
+        "+"
     ],
     "rules": [
         {
@@ -149,6 +149,48 @@
             ]
         },
         {
+            "name": "SEARCH → XALPHAS SEARCH'",
+            "production": [
+                "XALPHAS",
+                "SEARCH'"
+            ]
+        },
+        {
+            "name": "HTTP_ADDRESS'' → ε",
+            "production": []
+        },
+        {
+            "name": "HTTP_ADDRESS'' → \"?\" SEARCH",
+            "production": [
+                "?",
+                "SEARCH"
+            ]
+        },
+        {
+            "name": "LOGIN' → \".\" XALPHAS HOSTNAME' HOST_PORT'",
+            "production": [
+                ".",
+                "XALPHAS",
+                "HOSTNAME'",
+                "HOST_PORT'"
+            ]
+        },
+        {
+            "name": "LOGIN' → \"@\" HOST_PORT",
+            "production": [
+                "@",
+                "HOST_PORT"
+            ]
+        },
+        {
+            "name": "LOGIN' → \":\" XALPHAS LOGIN''",
+            "production": [
+                ":",
+                "XALPHAS",
+                "LOGIN''"
+            ]
+        },
+        {
             "name": "SEGMENT → XALPHAS",
             "production": [
                 "XALPHAS"
@@ -171,44 +213,6 @@
             "production": []
         },
         {
-            "name": "SEARCH → XALPHAS SEARCH'",
-            "production": [
-                "XALPHAS",
-                "SEARCH'"
-            ]
-        },
-        {
-            "name": "SEARCH' → \"+\" XALPHAS SEARCH'",
-            "production": [
-                "+",
-                "XALPHAS",
-                "SEARCH'"
-            ]
-        },
-        {
-            "name": "SEARCH' → ε",
-            "production": []
-        },
-        {
-            "name": "LOGIN' → ε",
-            "production": []
-        },
-        {
-            "name": "LOGIN' → \"@\" HOST_PORT",
-            "production": [
-                "@",
-                "HOST_PORT"
-            ]
-        },
-        {
-            "name": "LOGIN' → \":\" XALPHAS LOGIN''",
-            "production": [
-                ":",
-                "XALPHAS",
-                "LOGIN''"
-            ]
-        },
-        {
             "name": "HOSTNAME' → \".\" XALPHAS HOSTNAME'",
             "production": [
                 ".",
@@ -227,15 +231,16 @@
             ]
         },
         {
-            "name": "HTTP_ADDRESS'' → ε",
-            "production": []
+            "name": "SEARCH' → \"+\" XALPHAS SEARCH'",
+            "production": [
+                "+",
+                "XALPHAS",
+                "SEARCH'"
+            ]
         },
         {
-            "name": "HTTP_ADDRESS'' → \"?\" SEARCH",
-            "production": [
-                "?",
-                "SEARCH"
-            ]
+            "name": "SEARCH' → ε",
+            "production": []
         },
         {
             "name": "LOGIN'' → ε",
@@ -479,44 +484,6 @@
             ]
         },
         {
-            "name": "SEGMENT",
-            "transitions": [
-                null,
-                null,
-                21,
-                null,
-                null,
-                null,
-                21,
-                20,
-                20,
-                20,
-                null,
-                null,
-                null,
-                21
-            ]
-        },
-        {
-            "name": "PATH'",
-            "transitions": [
-                null,
-                null,
-                22,
-                null,
-                null,
-                null,
-                23,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                23
-            ]
-        },
-        {
             "name": "SEARCH",
             "transitions": [
                 null,
@@ -526,9 +493,9 @@
                 null,
                 null,
                 null,
-                24,
-                24,
-                24,
+                20,
+                20,
+                20,
                 null,
                 null,
                 null,
@@ -536,7 +503,7 @@
             ]
         },
         {
-            "name": "SEARCH'",
+            "name": "HTTP_ADDRESS''",
             "transitions": [
                 null,
                 null,
@@ -544,14 +511,14 @@
                 null,
                 null,
                 null,
+                22,
                 null,
                 null,
                 null,
                 null,
                 null,
-                25,
                 null,
-                26
+                21
             ]
         },
         {
@@ -559,18 +526,56 @@
             "transitions": [
                 null,
                 null,
+                null,
+                null,
+                null,
+                24,
+                null,
+                null,
+                null,
+                null,
+                25,
+                23,
+                null,
+                null
+            ]
+        },
+        {
+            "name": "SEGMENT",
+            "transitions": [
+                null,
+                null,
                 27,
+                null,
+                null,
+                null,
+                27,
+                26,
+                26,
+                26,
+                null,
+                null,
+                null,
+                27
+            ]
+        },
+        {
+            "name": "PATH'",
+            "transitions": [
                 null,
                 null,
                 28,
                 null,
                 null,
                 null,
-                null,
                 29,
                 null,
                 null,
-                27
+                null,
+                null,
+                null,
+                null,
+                29
             ]
         },
         {
@@ -587,8 +592,8 @@
                 null,
                 null,
                 31,
-                null,
                 30,
+                null,
                 31
             ]
         },
@@ -612,7 +617,7 @@
             ]
         },
         {
-            "name": "HTTP_ADDRESS''",
+            "name": "SEARCH'",
             "transitions": [
                 null,
                 null,
@@ -620,14 +625,14 @@
                 null,
                 null,
                 null,
-                34,
                 null,
                 null,
                 null,
                 null,
                 null,
                 null,
-                33
+                33,
+                34
             ]
         },
         {

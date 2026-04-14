@@ -389,7 +389,7 @@ Aby bolo možné opraviť, musia byť tieto medzistavy inline-nuté priamo do $"
 
 *Nové pravidlá pre* $"LOGIN"$*:*
 ```bnf
-LOGIN → XALPHAS
+LOGIN → XALPHAS "." XALPHAS HOSTNAME' HOST_PORT'
 LOGIN → XALPHAS ":" XALPHAS
 LOGIN → XALPHAS "@" HOST_PORT
 LOGIN → XALPHAS ":" XALPHAS "@" HOST_PORT
@@ -397,10 +397,10 @@ LOGIN → XALPHAS ":" XALPHAS "@" HOST_PORT
 
 *Pre neterminál* $"LOGIN"$ *je spoločný prefix* $"XALPHAS"$
 - $"LOGIN" → "XALPHAS" "LOGIN'"$
-- $"LOGIN'" → ε | ":" "XALPHAS" | "@" "HOST_PORT" | ":" "XALPHAS" "@" "HOST_PORT"$
+- $"LOGIN'" → "." "XALPHAS" "HOSTNAME'" "HOST_PORT'" | ":" "XALPHAS" | "@" "HOST_PORT" | ":" "XALPHAS" "@" "HOST_PORT"$
 
 *Pre neterminál* $"LOGIN'"$ *je spoločný prefix* $":" "XALPHAS"$
-- $"LOGIN'" → ε | "@" "HOST_PORT" | ":" "XALPHAS" "LOGIN''"$
+- $"LOGIN'" → "." "XALPHAS" "HOSTNAME'" "HOST_PORT'" | "@" "HOST_PORT" | ":" "XALPHAS" "LOGIN''"$
 - $"LOGIN''" → ε | "@" "HOST_PORT"$
 
 *Výsledok:*
@@ -414,39 +414,40 @@ FTP_ADDRESS → "ftp://" LOGIN "/" PATH
 TELNET_ADDRESS → "telnet://" LOGIN
 MAILTO_ADDRESS → "mailto:" XALPHAS "@" HOSTNAME
 HOST_PORT → HOSTNAME HOST_PORT'
-PATH → SEGMENT PATH'
-SEARCH → XALPHAS SEARCH'
-LOGIN → XALPHAS LOGIN'
-XALPHAS → XALPHA XALPHAS'
-HOSTNAME → XALPHAS HOSTNAME'
-PORT → DIGITS
-DIGITS → DIGIT DIGITS'
-SEGMENT → XALPHAS | ε
-XALPHA → ALPHA
-XALPHA → DIGIT
-DIGIT → "0" | .. | "9"
-ALPHA → "A" | .. | "Z"
-ALPHA → "a" | .. | "z"
-PATH' → "/" SEGMENT PATH'
-PATH' → ε
-SEARCH' → "+" XALPHAS SEARCH'
-SEARCH' → ε
-XALPHAS' → XALPHA XALPHAS'
-XALPHAS' → ε
-HOSTNAME' → "." XALPHAS HOSTNAME'
-HOSTNAME' → ε
-DIGITS' → DIGIT DIGITS'
-DIGITS' → ε
 HTTP_ADDRESS' → ε
 HTTP_ADDRESS' → "?" SEARCH
 HTTP_ADDRESS' → "/" PATH HTTP_ADDRESS''
+LOGIN → XALPHAS LOGIN'
+PATH → SEGMENT PATH'
+XALPHAS → XALPHA XALPHAS'
+HOSTNAME → XALPHAS HOSTNAME'
 HOST_PORT' → ε
 HOST_PORT' → ":" PORT
-LOGIN' → ε
-LOGIN' → "@" HOST_PORT
-LOGIN' → ":" XALPHAS LOGIN''
+SEGMENT → XALPHAS
+SEGMENT → ε
+PATH' → "/" SEGMENT PATH'
+PATH' → ε
+SEARCH → XALPHAS SEARCH'
+SEARCH' → "+" XALPHAS SEARCH'
+SEARCH' → ε
+HOSTNAME' → "." XALPHAS HOSTNAME'
+HOSTNAME' → ε
+XALPHA → ALPHA
+XALPHA → DIGIT
+XALPHAS' → XALPHA XALPHAS'
+XALPHAS' → ε
+PORT → DIGITS
+DIGITS → DIGIT DIGITS'
+DIGIT → "0" | .. | "9"
+DIGITS' → DIGIT DIGITS'
+DIGITS' → ε
+ALPHA → "A" | .. | "Z"
+ALPHA → "a" | .. | "z"
 HTTP_ADDRESS'' → ε
 HTTP_ADDRESS'' → "?" SEARCH
+LOGIN' → "." XALPHAS HOSTNAME' HOST_PORT'
+LOGIN' → "@" HOST_PORT
+LOGIN' → ":" XALPHAS LOGIN''
 LOGIN'' → ε
 LOGIN'' → "@" HOST_PORT
 ```
@@ -466,20 +467,20 @@ $"FIRST"$ sety:
 - $F_1("XALPHAS") = F_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1("HOSTNAME") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1("HOST_PORT'") = {ε} union {":"} = {ε, ":"}$
+- $F_1("SEARCH") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
+- $F_1("HTTP_ADDRESS''") = {ε} union {"?"} = {ε, "?"}$
+- $F_1("LOGIN'") = {"."} union {"@"} union {":"} = {".", "@", ":"}$
 - $F_1("SEGMENT") = F_1("XALPHAS") union {ε} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε}$
 - $F_1("PATH'") = {"/"} union {ε} = {"/", ε}$
-- $F_1("SEARCH") = F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
-- $F_1("SEARCH'") = {"+"} union {ε} = {"+", ε}$
-- $F_1("LOGIN'") = {ε} union {"@"} union {":"} = {ε, "@", ":"}$
 - $F_1("XALPHA") = F_1("ALPHA") union F_1("DIGIT") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1("XALPHAS'") = F_1("XALPHA") union {ε} = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", ε}$
 - $F_1("HOSTNAME'") = {"."} union {ε} = {".", ε}$
 - $F_1("PORT") = F_1("DIGITS") = {"0", dots, "9"}$
-- $F_1("DIGITS") = F_1("DIGIT") = {"0", dots, "9"}$
-- $F_1("DIGIT") = {"0", dots, "9"}$
-- $F_1("DIGITS'") = F_1("DIGIT") union {ε} = {"0", dots, "9", ε}$
+- $F_1("SEARCH'") = {"+"} union {ε} = {"+", ε}$
 - $F_1("ALPHA") = {"A", dots, "Z"} union {"a", dots, "z"} = {"A", dots, "Z", "a", dots, "z"}$
-- $F_1("HTTP_ADDRESS''") = {ε} union {"?"} = {ε, "?"}$
+- $F_1("DIGIT") = {"0", dots, "9"}$
+- $F_1("DIGITS") = F_1("DIGIT") = {"0", dots, "9"}$
+- $F_1("DIGITS'") = F_1("DIGIT") union {ε} = {"0", dots, "9", ε}$
 - $F_1("LOGIN''") = {ε} union {"@"} = {ε, "@"}$
 
 $"FOLLOW"$ sety:
@@ -492,23 +493,23 @@ $"FOLLOW"$ sety:
 - $"FO"_1("HTTP_ADDRESS'") = "FO"_1("HTTP_ADDRESS") = {"$"}$
 - $"FO"_1("LOGIN") = {"/"} union "FO"_1("TELNET_ADDRESS") = {"/", "$"}$
 - $"FO"_1("PATH") = "FO"_1("FTP_ADDRESS") union F_1("HTTP_ADDRESS''") "/" {ε} /* "/" PATH HTTP_ADDRESS'' */ union "FO"_1("HTTP_ADDRESS'") = {"$", "?"}$
-- $"FO"_1("XALPHAS") = {"@"} union F_1("LOGIN'") "/" {ε} /* XALPHAS LOGIN' */ union "FO"_1("LOGIN") union F_1("HOSTNAME'") "/" {ε} /* XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME") union "FO"_1("SEGMENT") union F_1("SEARCH'") "/" {ε} /* XALPHAS SEARCH' */ union "FO"_1("SEARCH") union F_1("SEARCH'") "/" {ε} /* "+" XALPHAS SEARCH' */ union "FO"_1("SEARCH'") union F_1("LOGIN''") "/" {ε} /* ":" XALPHAS LOGIN'' */ union "FO"_1("LOGIN'") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME'") union "FO"_1("USER") union "FO"_1("PASSWORD") = {"@", ":", "/", "$", ".", "?", "+"}$
+- $"FO"_1("XALPHAS") = {"@"} union F_1("LOGIN'") /* XALPHAS LOGIN' */ union F_1("HOSTNAME'") "/" {ε} /* XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME") union F_1("SEARCH'") "/" {ε} /* XALPHAS SEARCH' */ union "FO"_1("SEARCH") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union F_1("HOST_PORT'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union "FO"_1("LOGIN'") union F_1("LOGIN''") "/" {ε} /* ":" XALPHAS LOGIN'' */ union "FO"_1("SEGMENT") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME'") union F_1("SEARCH'") "/" {ε} /* "+" XALPHAS SEARCH' */ union "FO"_1("SEARCH'") = {"@", ".", ":", "$", "?", "/", "+"}$
 - $"FO"_1("HOSTNAME") = "FO"_1("MAILTO_ADDRESS") union F_1("HOST_PORT'") "/" {ε} /* HOSTNAME HOST_PORT' */ union "FO"_1("HOST_PORT") = {"$", ":", "?", "/"}$
-- $"FO"_1("HOST_PORT'") = "FO"_1("HOST_PORT") = {"?", "/", "$"}$
+- $"FO"_1("HOST_PORT'") = "FO"_1("HOST_PORT") union "FO"_1("LOGIN'") = {"?", "/", "$"}$
+- $"FO"_1("SEARCH") = "FO"_1("HTTP_ADDRESS'") union "FO"_1("HTTP_ADDRESS''") = {"$"}$
+- $"FO"_1("HTTP_ADDRESS''") = "FO"_1("HTTP_ADDRESS'") = {"$"}$
+- $"FO"_1("LOGIN'") = "FO"_1("LOGIN") = {"/", "$"}$
 - $"FO"_1("SEGMENT") = F_1("PATH'") "/" {ε} /* SEGMENT PATH' */ union "FO"_1("PATH") union F_1("PATH'") "/" {ε} /* "/" SEGMENT PATH' */ union "FO"_1("PATH'") = {"/", "$", "?"}$
 - $"FO"_1("PATH'") = "FO"_1("PATH") union cancel("FO"_1("PATH'")) = {"$", "?"}$
-- $"FO"_1("SEARCH") = "FO"_1("HTTP_ADDRESS'") union "FO"_1("HTTP_ADDRESS''") = {"$"}$
-- $"FO"_1("SEARCH'") = "FO"_1("SEARCH") union cancel("FO"_1("SEARCH'")) = {"$"}$
-- $"FO"_1("LOGIN'") = "FO"_1("LOGIN") = {"/", "$"}$
-- $"FO"_1("XALPHA") = F_1("XALPHAS'") "/" {ε} /* XALPHA XALPHAS' */ union "FO"_1("XALPHAS") union "FO"_1("XALPHAS'") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ":", "/", "$", ".", "?", "+"}$
-- $"FO"_1("XALPHAS'") = "FO"_1("XALPHAS") union cancel("FO"_1("XALPHAS'")) = {"@", ":", "/", "$", ".", "?", "+"}$
-- $"FO"_1("HOSTNAME'") = "FO"_1("HOSTNAME") union cancel("FO"_1("HOSTNAME'")) = {"$", ":", "?", "/"}$
+- $"FO"_1("XALPHA") = F_1("XALPHAS'") "/" {ε} /* XALPHA XALPHAS' */ union "FO"_1("XALPHAS") union "FO"_1("XALPHAS'") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ".", ":", "$", "?", "/", "+"}$
+- $"FO"_1("XALPHAS'") = "FO"_1("XALPHAS") union cancel("FO"_1("XALPHAS'")) = {"@", ".", ":", "$", "?", "/", "+"}$
+- $"FO"_1("HOSTNAME'") = "FO"_1("HOSTNAME") union F_1("HOST_PORT'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union "FO"_1("LOGIN'") union cancel("FO"_1("HOSTNAME'")) = {"$", ":", "?", "/"}$
 - $"FO"_1("PORT") = "FO"_1("HOST_PORT'") = {"?", "/", "$"}$
+- $"FO"_1("SEARCH'") = "FO"_1("SEARCH") union cancel("FO"_1("SEARCH'")) = {"$"}$
+- $"FO"_1("ALPHA") = "FO"_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ".", ":", "$", "?", "/", "+"}$
+- $"FO"_1("DIGIT") = "FO"_1("XALPHA") union F_1("DIGITS'") "/" {ε} /* DIGIT DIGITS' */ union "FO"_1("DIGITS") union "FO"_1("DIGITS'") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ".", ":", "$", "?", "/", "+"}$
 - $"FO"_1("DIGITS") = "FO"_1("PORT") = {"?", "/", "$"}$
-- $"FO"_1("DIGIT") = "FO"_1("XALPHA") union F_1("DIGITS'") "/" {ε} /* DIGIT DIGITS' */ union "FO"_1("DIGITS") union "FO"_1("DIGITS'") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ":", "/", "$", ".", "?", "+"}$
 - $"FO"_1("DIGITS'") = "FO"_1("DIGITS") union cancel("FO"_1("DIGITS'")) = {"?", "/", "$"}$
-- $"FO"_1("ALPHA") = "FO"_1("XALPHA") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9", "@", ":", "/", "$", ".", "?", "+"}$
-- $"FO"_1("HTTP_ADDRESS''") = "FO"_1("HTTP_ADDRESS'") = {"$"}$
 - $"FO"_1("LOGIN''") = "FO"_1("LOGIN'") = {"/", "$"}$
 
 *Pre $"URL"$*:
@@ -549,6 +550,20 @@ $"FOLLOW"$ sety:
 - $"FO"_1("HOST_PORT'") = {"?", "/", "$"}$
 - #text(olive)[Žiadny konflikt]
 
+*Pre $"SEARCH"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"HTTP_ADDRESS''"$*:
+- $F_1(ε) = {ε}$
+- $F_1("?" "SEARCH") = {"?"}$
+- $"FO"_1("HTTP_ADDRESS''") = {"$"}$
+- #text(olive)[Žiadny konflikt]
+
+*Pre $"LOGIN'"$*:
+- $F_1("." "XALPHAS" "HOSTNAME'" "HOST_PORT'") = {"."}$
+- $F_1("@" "HOST_PORT") = {"@"}$
+- $F_1(":" "XALPHAS" "LOGIN''") = {":"}$
+- #text(olive)[Žiadny konflikt]
+
 *Pre $"SEGMENT"$*:
 - $F_1("XALPHAS") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1(ε) = {ε}$
@@ -561,21 +576,6 @@ $"FOLLOW"$ sety:
 - $"FO"_1("PATH'") = {"$", "?"}$
 - #text(olive)[Žiadny konflikt]
 
-*Pre $"SEARCH"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
-
-*Pre $"SEARCH'"$*:
-- $F_1("+" "XALPHAS" "SEARCH'") = {"+"}$
-- $F_1(ε) = {ε}$
-- $"FO"_1("SEARCH'") = {"$"}$
-- #text(olive)[Žiadny konflikt]
-
-*Pre $"LOGIN'"$*:
-- $F_1(ε) = {ε}$
-- $F_1("@" "HOST_PORT") = {"@"}$
-- $F_1(":" "XALPHAS" "LOGIN''") = {":"}$
-- $"FO"_1("LOGIN'") = {"/", "$"}$
-- #text(olive)[Žiadny konflikt]
-
 *Pre $"XALPHA"$*:
 - $F_1("ALPHA") = {"A", dots, "Z", "a", dots, "z"}$
 - $F_1("DIGIT") = {"0", dots, "9"}$
@@ -584,7 +584,7 @@ $"FOLLOW"$ sety:
 *Pre $"XALPHAS'"$*:
 - $F_1("XALPHA" "XALPHAS'") = {"A", dots, "Z", "a", dots, "z", "0", dots, "9"}$
 - $F_1(ε) = {ε}$
-- $"FO"_1("XALPHAS'") = {"@", ":", "/", "$", ".", "?", "+"}$
+- $"FO"_1("XALPHAS'") = {"@", ".", ":", "$", "?", "/", "+"}$
 - #text(olive)[Žiadny konflikt]
 
 *Pre $"HOSTNAME'"$*:
@@ -595,14 +595,10 @@ $"FOLLOW"$ sety:
 
 *Pre $"PORT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
 
-*Pre $"DIGITS"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
-
-*Pre $"DIGIT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
-
-*Pre $"DIGITS'"$*:
-- $F_1("DIGIT" "DIGITS'") = {"0", dots, "9"}$
+*Pre $"SEARCH'"$*:
+- $F_1("+" "XALPHAS" "SEARCH'") = {"+"}$
 - $F_1(ε) = {ε}$
-- $"FO"_1("DIGITS'") = {"?", "/", "$"}$
+- $"FO"_1("SEARCH'") = {"$"}$
 - #text(olive)[Žiadny konflikt]
 
 *Pre $"ALPHA"$*:
@@ -610,10 +606,14 @@ $"FOLLOW"$ sety:
 - $F_1("a"dots"z") = {"a", dots, "z"}$
 - #text(olive)[Žiadny konflikt]
 
-*Pre $"HTTP_ADDRESS''"$*:
+*Pre $"DIGIT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"DIGITS"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"DIGITS'"$*:
+- $F_1("DIGIT" "DIGITS'") = {"0", dots, "9"}$
 - $F_1(ε) = {ε}$
-- $F_1("?" "SEARCH") = {"?"}$
-- $"FO"_1("HTTP_ADDRESS''") = {"$"}$
+- $"FO"_1("DIGITS'") = {"?", "/", "$"}$
 - #text(olive)[Žiadny konflikt]
 
 *Pre $"LOGIN''"$*:
@@ -621,8 +621,6 @@ $"FOLLOW"$ sety:
 - $F_1("@" "HOST_PORT") = {"@"}$
 - $"FO"_1("LOGIN''") = {"/", "$"}$
 - #text(olive)[Žiadny konflikt]
-
-== Lexikálna analýza
 
 === Jednoduché
 
@@ -695,29 +693,30 @@ FTP_ADDRESS → ftp LOGIN "/" PATH
 TELNET_ADDRESS → telnet LOGIN
 MAILTO_ADDRESS → mailto XALPHAS "@" HOSTNAME
 HOST_PORT → HOSTNAME HOST_PORT'
-PATH → SEGMENT PATH'
-SEARCH → XALPHAS SEARCH'
+HTTP_ADDRESS' → ε
+HTTP_ADDRESS' → "?" SEARCH
+HTTP_ADDRESS' → "/" PATH HTTP_ADDRESS''
 LOGIN → XALPHAS LOGIN'
+PATH → SEGMENT PATH'
 XALPHAS → text_number | digits | text
 HOSTNAME → XALPHAS HOSTNAME'
-PORT → digits
-SEGMENT → XALPHAS | ε
+HOST_PORT' → ε
+HOST_PORT' → ":" PORT
+SEGMENT → XALPHAS
+SEGMENT → ε
 PATH' → "/" SEGMENT PATH'
 PATH' → ε
+SEARCH → XALPHAS SEARCH'
 SEARCH' → "+" XALPHAS SEARCH'
 SEARCH' → ε
 HOSTNAME' → "." XALPHAS HOSTNAME'
 HOSTNAME' → ε
-HTTP_ADDRESS' → ε
-HTTP_ADDRESS' → "?" SEARCH
-HTTP_ADDRESS' → "/" PATH HTTP_ADDRESS''
-HOST_PORT' → ε
-HOST_PORT' → ":" PORT
-LOGIN' → ε
-LOGIN' → "@" HOST_PORT
-LOGIN' → ":" XALPHAS LOGIN''
+PORT → digits
 HTTP_ADDRESS'' → ε
 HTTP_ADDRESS'' → "?" SEARCH
+LOGIN' → "." XALPHAS HOSTNAME' HOST_PORT'
+LOGIN' → "@" HOST_PORT
+LOGIN' → ":" XALPHAS LOGIN''
 LOGIN'' → ε
 LOGIN'' → "@" HOST_PORT
 ```
@@ -737,14 +736,14 @@ $"FIRST"$ sety:
 - $F_1("XALPHAS") = {"text_number"} union {"digits"} union {"text"} = {"text_number", "digits", "text"}$
 - $F_1("HOSTNAME") = F_1("XALPHAS") = {"text_number", "digits", "text"}$
 - $F_1("HOST_PORT'") = {ε} union {":"} = {ε, ":"}$
+- $F_1("SEARCH") = F_1("XALPHAS") = {"text_number", "digits", "text"}$
+- $F_1("HTTP_ADDRESS''") = {ε} union {"?"} = {ε, "?"}$
+- $F_1("LOGIN'") = {"."} union {"@"} union {":"} = {".", "@", ":"}$
 - $F_1("SEGMENT") = F_1("XALPHAS") union {ε} = {"text_number", "digits", "text", ε}$
 - $F_1("PATH'") = {"/"} union {ε} = {"/", ε}$
-- $F_1("SEARCH") = F_1("XALPHAS") = {"text_number", "digits", "text"}$
-- $F_1("SEARCH'") = {"+"} union {ε} = {"+", ε}$
-- $F_1("LOGIN'") = {ε} union {"@"} union {":"} = {ε, "@", ":"}$
 - $F_1("HOSTNAME'") = {"."} union {ε} = {".", ε}$
 - $F_1("PORT") = {"digits"}$
-- $F_1("HTTP_ADDRESS''") = {ε} union {"?"} = {ε, "?"}$
+- $F_1("SEARCH'") = {"+"} union {ε} = {"+", ε}$
 - $F_1("LOGIN''") = {ε} union {"@"} = {ε, "@"}$
 
 $"FOLLOW"$ sety:
@@ -757,17 +756,17 @@ $"FOLLOW"$ sety:
 - $"FO"_1("HTTP_ADDRESS'") = "FO"_1("HTTP_ADDRESS") = {"$"}$
 - $"FO"_1("LOGIN") = {"/"} union "FO"_1("TELNET_ADDRESS") = {"/", "$"}$
 - $"FO"_1("PATH") = "FO"_1("FTP_ADDRESS") union F_1("HTTP_ADDRESS''") "/" {ε} /* "/" PATH HTTP_ADDRESS'' */ union "FO"_1("HTTP_ADDRESS'") = {"$", "?"}$
-- $"FO"_1("XALPHAS") = {"@"} union F_1("LOGIN'") "/" {ε} /* XALPHAS LOGIN' */ union "FO"_1("LOGIN") union F_1("HOSTNAME'") "/" {ε} /* XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME") union "FO"_1("SEGMENT") union F_1("SEARCH'") "/" {ε} /* XALPHAS SEARCH' */ union "FO"_1("SEARCH") union F_1("SEARCH'") "/" {ε} /* "+" XALPHAS SEARCH' */ union "FO"_1("SEARCH'") union F_1("LOGIN''") "/" {ε} /* ":" XALPHAS LOGIN'' */ union "FO"_1("LOGIN'") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME'") = {"@", ":", "/", "$", ".", "?", "+"}$
+- $"FO"_1("XALPHAS") = {"@"} union F_1("LOGIN'") /* XALPHAS LOGIN' */ union F_1("HOSTNAME'") "/" {ε} /* XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME") union F_1("SEARCH'") "/" {ε} /* XALPHAS SEARCH' */ union "FO"_1("SEARCH") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union F_1("HOST_PORT'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union "FO"_1("LOGIN'") union F_1("LOGIN''") "/" {ε} /* ":" XALPHAS LOGIN'' */ union "FO"_1("SEGMENT") union F_1("HOSTNAME'") "/" {ε} /* "." XALPHAS HOSTNAME' */ union "FO"_1("HOSTNAME'") union F_1("SEARCH'") "/" {ε} /* "+" XALPHAS SEARCH' */ union "FO"_1("SEARCH'") = {"@", ".", ":", "$", "?", "/", "+"}$
 - $"FO"_1("HOSTNAME") = "FO"_1("MAILTO_ADDRESS") union F_1("HOST_PORT'") "/" {ε} /* HOSTNAME HOST_PORT' */ union "FO"_1("HOST_PORT") = {"$", ":", "?", "/"}$
-- $"FO"_1("HOST_PORT'") = "FO"_1("HOST_PORT") = {"?", "/", "$"}$
+- $"FO"_1("HOST_PORT'") = "FO"_1("HOST_PORT") union "FO"_1("LOGIN'") = {"?", "/", "$"}$
+- $"FO"_1("SEARCH") = "FO"_1("HTTP_ADDRESS'") union "FO"_1("HTTP_ADDRESS''") = {"$"}$
+- $"FO"_1("HTTP_ADDRESS''") = "FO"_1("HTTP_ADDRESS'") = {"$"}$
+- $"FO"_1("LOGIN'") = "FO"_1("LOGIN") = {"/", "$"}$
 - $"FO"_1("SEGMENT") = F_1("PATH'") "/" {ε} /* SEGMENT PATH' */ union "FO"_1("PATH") union F_1("PATH'") "/" {ε} /* "/" SEGMENT PATH' */ union "FO"_1("PATH'") = {"/", "$", "?"}$
 - $"FO"_1("PATH'") = "FO"_1("PATH") union cancel("FO"_1("PATH'")) = {"$", "?"}$
-- $"FO"_1("SEARCH") = "FO"_1("HTTP_ADDRESS'") union "FO"_1("HTTP_ADDRESS''") = {"$"}$
-- $"FO"_1("SEARCH'") = "FO"_1("SEARCH") union cancel("FO"_1("SEARCH'")) = {"$"}$
-- $"FO"_1("LOGIN'") = "FO"_1("LOGIN") = {"/", "$"}$
-- $"FO"_1("HOSTNAME'") = "FO"_1("HOSTNAME") union cancel("FO"_1("HOSTNAME'")) = {"$", ":", "?", "/"}$
+- $"FO"_1("HOSTNAME'") = "FO"_1("HOSTNAME") union F_1("HOST_PORT'") "/" {ε} /* "." XALPHAS HOSTNAME' HOST_PORT' */ union "FO"_1("LOGIN'") union cancel("FO"_1("HOSTNAME'")) = {"$", ":", "?", "/"}$
 - $"FO"_1("PORT") = "FO"_1("HOST_PORT'") = {"?", "/", "$"}$
-- $"FO"_1("HTTP_ADDRESS''") = "FO"_1("HTTP_ADDRESS'") = {"$"}$
+- $"FO"_1("SEARCH'") = "FO"_1("SEARCH") union cancel("FO"_1("SEARCH'")) = {"$"}$
 - $"FO"_1("LOGIN''") = "FO"_1("LOGIN'") = {"/", "$"}$
 
 *Pre $"URL"$*:
@@ -812,6 +811,20 @@ $"FOLLOW"$ sety:
 - $"FO"_1("HOST_PORT'") = {"?", "/", "$"}$
 - #text(olive)[Žiadny konflikt]
 
+*Pre $"SEARCH"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
+
+*Pre $"HTTP_ADDRESS''"$*:
+- $F_1(ε) = {ε}$
+- $F_1("?" "SEARCH") = {"?"}$
+- $"FO"_1("HTTP_ADDRESS''") = {"$"}$
+- #text(olive)[Žiadny konflikt]
+
+*Pre $"LOGIN'"$*:
+- $F_1("." "XALPHAS" "HOSTNAME'" "HOST_PORT'") = {"."}$
+- $F_1("@" "HOST_PORT") = {"@"}$
+- $F_1(":" "XALPHAS" "LOGIN''") = {":"}$
+- #text(olive)[Žiadny konflikt]
+
 *Pre $"SEGMENT"$*:
 - $F_1("XALPHAS") = {"text_number", "digits", "text"}$
 - $F_1(ε) = {ε}$
@@ -824,21 +837,6 @@ $"FOLLOW"$ sety:
 - $"FO"_1("PATH'") = {"$", "?"}$
 - #text(olive)[Žiadny konflikt]
 
-*Pre $"SEARCH"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
-
-*Pre $"SEARCH'"$*:
-- $F_1("+" "XALPHAS" "SEARCH'") = {"+"}$
-- $F_1(ε) = {ε}$
-- $"FO"_1("SEARCH'") = {"$"}$
-- #text(olive)[Žiadny konflikt]
-
-*Pre $"LOGIN'"$*:
-- $F_1(ε) = {ε}$
-- $F_1("@" "HOST_PORT") = {"@"}$
-- $F_1(":" "XALPHAS" "LOGIN''") = {":"}$
-- $"FO"_1("LOGIN'") = {"/", "$"}$
-- #text(olive)[Žiadny konflikt]
-
 *Pre $"HOSTNAME'"$*:
 - $F_1("." "XALPHAS" "HOSTNAME'") = {"."}$
 - $F_1(ε) = {ε}$
@@ -847,10 +845,10 @@ $"FOLLOW"$ sety:
 
 *Pre $"PORT"$*: Len jedno pravidlo — #text(olive)[Žiadny konflikt]
 
-*Pre $"HTTP_ADDRESS''"$*:
+*Pre $"SEARCH'"$*:
+- $F_1("+" "XALPHAS" "SEARCH'") = {"+"}$
 - $F_1(ε) = {ε}$
-- $F_1("?" "SEARCH") = {"?"}$
-- $"FO"_1("HTTP_ADDRESS''") = {"$"}$
+- $"FO"_1("SEARCH'") = {"$"}$
 - #text(olive)[Žiadny konflikt]
 
 *Pre $"LOGIN''"$*:
@@ -882,23 +880,25 @@ Pravidlá:
 18. $"HOSTNAME" → "XALPHAS" "HOSTNAME'"$
 19. $"HOST_PORT'" → ε$
 20. $"HOST_PORT'" → ":" "PORT"$
-21. $"SEGMENT" → "XALPHAS"$
-22. $"SEGMENT" → ε$
-23. $"PATH'" → "/" "SEGMENT" "PATH'"$
-24. $"PATH'" → ε$
-25. $"SEARCH" → "XALPHAS" "SEARCH'"$
-26. $"SEARCH'" → "+" "XALPHAS" "SEARCH'"$
-27. $"SEARCH'" → ε$
-28. $"LOGIN'" → ε$
-29. $"LOGIN'" → "@" "HOST_PORT"$
-30. $"LOGIN'" → ":" "XALPHAS" "LOGIN''"$
+21. $"SEARCH" → "XALPHAS" "SEARCH'"$
+22. $"HTTP_ADDRESS''" → ε$
+23. $"HTTP_ADDRESS''" → "?" "SEARCH"$
+24. $"LOGIN'" → "." "XALPHAS" "HOSTNAME'" "HOST_PORT'"$
+25. $"LOGIN'" → "@" "HOST_PORT"$
+26. $"LOGIN'" → ":" "XALPHAS" "LOGIN''"$
+27. $"SEGMENT" → "XALPHAS"$
+28. $"SEGMENT" → ε$
+29. $"PATH'" → "/" "SEGMENT" "PATH'"$
+30. $"PATH'" → ε$
 31. $"HOSTNAME'" → "." "XALPHAS" "HOSTNAME'"$
 32. $"HOSTNAME'" → ε$
 33. $"PORT" → "digits"$
-34. $"HTTP_ADDRESS''" → ε$
-35. $"HTTP_ADDRESS''" → "?" "SEARCH"$
+34. $"SEARCH'" → "+" "XALPHAS" "SEARCH'"$
+35. $"SEARCH'" → ε$
 36. $"LOGIN''" → ε$
 37. $"LOGIN''" → "@" "HOST_PORT"$
+
+#pagebreak()
 
 Aby sa tabuľka zmestila na papier, boli použité následovné skratky:
 - $i_n$ ⇒ $"text_number"$
@@ -921,8 +921,8 @@ Aby sa tabuľka zmestila na papier, boli použité následovné skratky:
     [$d$],
     [$i_t$],
     [$":"$],
-    [$"+"$],
     [$"."$],
+    [$"+"$],
     [$"$"$],
   ),
   [$"URL"$], [$0$], [$1$], [], [$2$], [$3$], [], [], [], [], [], [], [], [], [],
@@ -937,16 +937,18 @@ Aby sa tabuľka zmestila na papier, boli použité následovné skratky:
   [$"XALPHAS"$], [], [], [], [], [], [], [], [$14$], [$15$], [$16$], [], [], [], [],
   [$"HOSTNAME"$], [], [], [], [], [], [], [], [$17$], [$17$], [$17$], [], [], [], [],
   [$"HOST_PORT'"$], [], [], [$18$], [], [], [], [$18$], [], [], [], [$19$], [], [], [$18$],
-  [$"SEGMENT"$], [], [], [$21$], [], [], [], [$21$], [$20$], [$20$], [$20$], [], [], [], [$21$],
-  [$"PATH'"$], [], [], [$22$], [], [], [], [$23$], [], [], [], [], [], [], [$23$],
-  [$"SEARCH"$], [], [], [], [], [], [], [], [$24$], [$24$], [$24$], [], [], [], [],
-  [$"SEARCH'"$], [], [], [], [], [], [], [], [], [], [], [], [$25$], [], [$26$],
-  [$"LOGIN'"$], [], [], [$27$], [], [], [$28$], [], [], [], [], [$29$], [], [], [$27$],
-  [$"HOSTNAME'"$], [], [], [$31$], [], [], [], [$31$], [], [], [], [$31$], [], [$30$], [$31$],
+  [$"SEARCH"$], [], [], [], [], [], [], [], [$20$], [$20$], [$20$], [], [], [], [],
+  [$"HTTP_ADDRESS''"$], [], [], [], [], [], [], [$22$], [], [], [], [], [], [], [$21$],
+  [$"LOGIN'"$], [], [], [], [], [], [$24$], [], [], [], [], [$25$], [$23$], [], [],
+  [$"SEGMENT"$], [], [], [$27$], [], [], [], [$27$], [$26$], [$26$], [$26$], [], [], [], [$27$],
+  [$"PATH'"$], [], [], [$28$], [], [], [], [$29$], [], [], [], [], [], [], [$29$],
+  [$"HOSTNAME'"$], [], [], [$31$], [], [], [], [$31$], [], [], [], [$31$], [$30$], [], [$31$],
   [$"PORT"$], [], [], [], [], [], [], [], [], [$32$], [], [], [], [], [],
-  [$"HTTP_ADDRESS''"$], [], [], [], [], [], [], [$34$], [], [], [], [], [], [], [$33$],
+  [$"SEARCH'"$], [], [], [], [], [], [], [], [], [], [], [], [], [$33$], [$34$],
   [$"LOGIN''"$], [], [], [$35$], [], [], [$36$], [], [], [], [], [], [], [], [$35$],
 )
+
+#pagebreak()
 
 = Implementácia
 
