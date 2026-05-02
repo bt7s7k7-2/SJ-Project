@@ -82,10 +82,14 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
         const expect = stack.at(-1)
         const token = tokens[i]
 
-        print(`Token: "${token.name}"; Expect: "${expect}"`)
+        print(`\x1b[96mInput:\x1b[0m "\x1b[92m${token.name}\x1b[0m"\x1b[2m;\x1b[22m \x1b[96mStack:\x1b[0m [${stack.map((v, i, a) => i == a.length - 1 ? (
+            `\x1b[92m${v}\x1b[0m`
+        ) : (
+            v
+        )).join(", ")}]`)
 
         if (expect == token.name) {
-            print("Consume " + JSON.stringify(token.name))
+            print(`  Consume token: \x1b[93m${JSON.stringify(token.name)}\x1b[0m`)
             stack.pop()
             i++
             continue
@@ -108,7 +112,7 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
 
         const rule = table.rules[transition]
         stack.pop()
-        print("Rule: " + rule.name)
+        print(`  Using rule: \x1b[95m${rule.name}\x1b[0m`)
         stack.push(...rule.production.toReversed())
     }
 }
