@@ -70,22 +70,22 @@ interface TransitionTable {
     }[]
 }
 
-function syntacticAnalysis(input: string, tokens: Token[]) {
+function syntacticAnalysis(document: string, table: TransitionTable, tokens: Iterator<Token>) {
     const stack: string[] = ["$"]
-    const table: TransitionTable = JSON.parse(readFileSync("table.json", "utf-8"))
 
     stack.push(table.states[0].name)
 
-    let i = 0
+    let input = tokens.next()
+    const ast: (string | number)[] = []
 
     while (stack.length > 0) {
         const expect = stack.at(-1)
 
-        if (i >= tokens.length) {
-            throw new ParserAbort("Reached end of input without finishing parsing", input, input.length)
+        if (input.done) {
+            throw new ParserAbort("Reached end of input without finishing parsing", document, document.length)
         }
 
-        const token = tokens[i]
+        const token = input.value
 
         print(`\x1b[96mInput:\x1b[0m "\x1b[92m${token.name}\x1b[0m"\x1b[2m;\x1b[22m \x1b[96mStack:\x1b[0m [${stack.map((v, i, a) => i == a.length - 1 ? (
             `\x1b[92m${v}\x1b[0m`
@@ -96,13 +96,14 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
         if (expect == token.name) {
             print(`  Consume token: \x1b[93m${JSON.stringify(token.name)}\x1b[0m`)
             stack.pop()
-            i++
+            ast.push(token.name == token.value ? token.name : `${token.name}${JSON.stringify(token.value)}`)
+            input = tokens.next()
             continue
         }
 
         const state = table.states.find(v => v.name == expect)
         if (state == null) {
-            throw new ParserAbort("Expected " + JSON.stringify(expect), input, token.index)
+            throw new ParserAbort("Expected " + JSON.stringify(expect), document, token.index)
         }
 
         const symbolIdx = token.name == "$" ? table.symbols.length : table.symbols.indexOf(token.name)
@@ -110,22 +111,48 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
             throw new Error("Cannot find token in table " + JSON.stringify(token.name))
         }
 
-        const transition = state.transitions[symbolIdx]
-        if (transition == null) {
+        const ruleIdx = state.transitions[symbolIdx]
+        if (ruleIdx == null) {
             if (config["syn-skip-token"]) {
                 warn("  Attempting to recover error by skipping token")
-                i++
+                input = tokens.next()
                 continue
             }
 
-            throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), input, token.index, token.value.length)
+            throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), document, token.index, token.value.length)
         }
 
-        const rule = table.rules[transition]
+        const rule = table.rules[ruleIdx]
         stack.pop()
         print(`  Using rule: \x1b[95m${rule.name}\x1b[0m`)
+        ast.push(ruleIdx)
         stack.push(...rule.production.toReversed())
     }
+
+    return ast
+}
+
+function printAst(ast: ReturnType<typeof syntacticAnalysis>, table: TransitionTable) {
+    let index = 0
+    function visit(indent: number, count: number) {
+        for (; count > 0 && index <= ast.length; count--) {
+            const instruction = ast[index++]
+
+            if (typeof instruction == "number") {
+                const rule = table.rules[instruction]
+
+                print(`${"\x1b[2m| \x1b[22m".repeat(indent)}\x1b[95m${rule.name.split(" ")[0]}\x1b[0m`)
+                if (rule.production.length == 0) {
+                    print(`${"\x1b[2m| \x1b[22m".repeat(indent + 1)}ε`)
+                }
+                visit(indent + 1, rule.production.length)
+            } else {
+                print(`${"\x1b[2m| \x1b[22m".repeat(indent)}${instruction}`)
+            }
+        }
+    }
+
+    visit(0, 1)
 }
 
 const config = {
@@ -133,6 +160,7 @@ const config = {
     "lex-recover-2": false,
     "syn-skip-token": false,
     "syn-recover-2": false,
+    "ast": false,
 };
 
 (() => {
@@ -160,7 +188,9 @@ const config = {
     try {
         const tokens = lexicalAnalysis(input)
         print(inspect(tokens, undefined, undefined, true))
-        syntacticAnalysis(input, tokens)
+        const table: TransitionTable = JSON.parse(readFileSync("table.json", "utf-8"))
+        const ast = syntacticAnalysis(input, table, tokens[Symbol.iterator]())
+        if (config.ast) printAst(ast, table)
     } catch (err) {
         if (err instanceof ParserAbort) {
             error(err.message + "\n" + formatPointer(err.input, err.index, err.length))
