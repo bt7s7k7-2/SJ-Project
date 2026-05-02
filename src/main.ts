@@ -1,6 +1,6 @@
 import { readFileSync } from "fs"
 import { inspect } from "util"
-import { error, print } from "./print.ts"
+import { error, print, warn } from "./print.ts"
 
 function formatPointer(input: string, index: number, length = 1) {
     return `\x1b[97m${input}\n\x1b[93m${" ".repeat(index)}${length == 1 ? "^" : "~".repeat(length)}`
@@ -80,6 +80,11 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
 
     while (stack.length > 0) {
         const expect = stack.at(-1)
+
+        if (i >= tokens.length) {
+            throw new ParserAbort("Reached end of input without finishing parsing", input, input.length)
+        }
+
         const token = tokens[i]
 
         print(`\x1b[96mInput:\x1b[0m "\x1b[92m${token.name}\x1b[0m"\x1b[2m;\x1b[22m \x1b[96mStack:\x1b[0m [${stack.map((v, i, a) => i == a.length - 1 ? (
@@ -107,6 +112,12 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
 
         const transition = state.transitions[symbolIdx]
         if (transition == null) {
+            if (config["syn-skip-token"]) {
+                warn("  Attempting to recover error by skipping token")
+                i++
+                continue
+            }
+
             throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), input, token.index, token.value.length)
         }
 
@@ -117,8 +128,29 @@ function syntacticAnalysis(input: string, tokens: Token[]) {
     }
 }
 
+const config = {
+    "lex-recover-1": false,
+    "lex-recover-2": false,
+    "syn-skip-token": false,
+    "syn-recover-2": false,
+};
+
 (() => {
-    const input = process.argv[2]
+
+    const args = process.argv.slice(2)
+    while (args.length > 0 && args[0].startsWith("--")) {
+        const key = args[0].slice(2)
+
+        if (key in config) {
+            config[key as keyof typeof config] = true
+        } else {
+            error("Invalid argument " + args[0])
+            process.exit(1)
+        }
+
+        args.shift()
+    }
+    const input = args[0]
 
     if (!input) {
         error("Please provide an input as a CLI argument")

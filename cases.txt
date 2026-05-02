@@ -22,3 +22,7 @@ telnet://user:pass@host:port/
 http://host:abc
 # Invalid: xalphas requires at least one xalpha character before the @
 mailto:@host.com
+# Valid --syn-skip-token
+http://google..com
+# Invalid: Reached end of input without finishing
+http://google.
