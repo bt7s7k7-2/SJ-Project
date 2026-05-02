@@ -40,6 +40,11 @@ function lexicalAnalysis(input: string) {
         const match = matcher.exec(input)
 
         if (match == null) {
+            if (config["lex-skip-symbol"]) {
+                warn(`Attempting to recover error by skipping symbol ${JSON.stringify(input[index])}`)
+                matcher.lastIndex = index + 1
+                continue
+            }
             throw new ParserAbort("Unexpected token", input, index)
         }
 
@@ -156,7 +161,7 @@ function printAst(ast: ReturnType<typeof syntacticAnalysis>, table: TransitionTa
 }
 
 const config = {
-    "lex-recover-1": false,
+    "lex-skip-symbol": false,
     "lex-recover-2": false,
     "syn-skip-token": false,
     "syn-recover-2": false,
