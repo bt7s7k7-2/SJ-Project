@@ -14,14 +14,14 @@ while IFS= read -r label && IFS= read -r test; do
 
     # shellcheck disable=SC2086
     if node --enable-source-maps build/main.js $arguments"$test"; then
-        if [[ ${label#"# Valid"} != "$label" ]]; then
+        if [[ ${label#"# Platný"} != "$label" ]]; then
             ((success++))
             echo -e "\e[92mTest success\e[0m"
         else
             echo -e "\e[91mTest failed\e[0m"
         fi
     else
-        if [[ ${label#"# Invalid"} != "$label" ]]; then
+        if [[ ${label#"# Neplatný"} != "$label" ]]; then
             ((success++))
             echo -e "\e[92mTest success\e[0m"
         else

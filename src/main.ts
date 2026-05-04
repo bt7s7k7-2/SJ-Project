@@ -35,6 +35,7 @@ function lexicalAnalysis(input: string) {
     ]
 
     const result: Token[] = []
+    let skippedSymbol = false
 
     readInput: while (matcher.lastIndex < input.length) {
         const index = matcher.lastIndex
@@ -70,12 +71,13 @@ function lexicalAnalysis(input: string) {
                         skippedSymbol = true
                         tokenIndex--
                         errors.push([`Recovering error by skipping symbol`, input, i])
+                        continue
                     }
 
                     continue tryTokens
                 }
 
-                if (tokenIndex < tokenString.length) {
+                if (tokenIndex + 1 < tokenString.length) {
                     continue tryTokens
                 }
 
@@ -92,6 +94,7 @@ function lexicalAnalysis(input: string) {
             if (config["lex-skip-symbol"]) {
                 logErrorRecovery(`Attempting to recover error by skipping symbol`, input, index)
                 matcher.lastIndex = index + 1
+                skippedSymbol = true
                 continue
             }
             throw new ParserAbort("Unexpected token", input, index)
@@ -101,7 +104,13 @@ function lexicalAnalysis(input: string) {
             const token = tokens[i]
             const value = match[i + 1]
             if (value) {
+                if (skippedSymbol && token != null && result.at(-1)!.name == token) {
+                    result.at(-1)!.value += value
+                    break
+                }
+
                 result.push({ name: token ?? value, value, index })
+                skippedSymbol = false
                 break
             }
         }

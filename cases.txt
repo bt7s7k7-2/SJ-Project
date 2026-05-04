@@ -1,48 +1,52 @@
-# Valid
+# Platný
 http://google.com
-# Valid
+# Platný
 http://localhost:8080/api/v1?user+login
-# Valid
+# Platný
 ftp://admin:secret@files.net/uploads
-# Valid
+# Platný
 telnet://192.168.1.1
-# Valid
+# Platný
 telnet://user:pass@host:8080
-# Valid: --lex-insert-symbol
+# Platný: --lex-insert-symbol
 tenet://user:pass@host:8080
-# Valid
+# Platný
 mailto:john123@work.place.com
-# Valid
+# Platný
 ftp://guest@host/
-# Invalid: Invalid protocol
+# Neplatný: Neplatný protokol
 https://google.com
-# Valid: --lex-skip-symbol
+# Platný: --lex-skip-symbol
 https://google.com
-# Valid: --lex-insert-symbol
-htps://google.com
-# Invalid: Unsupported character
+# Platný: --lex-insert-symbol
+htp://google.com
+# Neplatný: Nepodporovaný symbol
 http://my-site.com
-# Valid: --lex-skip-symbol
+# Platný: --lex-skip-symbol
 http://my-site.com
-# Invalid: Missing / after login in ftp
+# Neplatný: Chýba "/" za LOGIN
 ftp://user@host
-# Valid: --syn-insert-token
+# Platný: --syn-insert-token
 ftp://user@host
-# Invalid: Trailing slash not allowed in telnet
+# Neplatný: Lomítko nie je na konci TELNET povolené
 telnet://user:pass@host:8080/
-# Valid: --syn-skip-token
+# Platný: --syn-skip-token
 telnet://user:pass@host:8080/
-# Invalid: The port rule requires digits, but letters were provided
+# Neplatný: Pravidlo PORT potrebuje DIGITS, nie TEXT
 telnet://user:pass@host:port
-# Invalid: The port rule requires digits, but letters were provided
+# Neplatný: Pravidlo PORT potrebuje DIGITS, nie TEXT
 http://host:abc
-# Valid: --syn-insert-token
+# Platný: --syn-insert-token
 http://
-# Invalid: xalphas requires at least one xalpha character before the @
+# Neplatný: XALPHAS nemôže byť prázdny
 mailto:@host.com
-# Valid: --syn-insert-token
+# Platný: --syn-insert-token
 mailto:@host.com
-# Valid --syn-skip-token
+# Platný --syn-skip-token
 http://google..com
-# Invalid: Reached end of input without finishing
+# Neplatný: --syn-skip-token Koniec vstupu pre skončením syntaktickej analýzy
 http://google.
+# Platný: --syn-insert-token
+http://
+# Neplatný: --lex-skip-symbol --syn-insert-token
+http
