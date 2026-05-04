@@ -988,7 +988,16 @@ Po skončení analýzy je symbol `$` automaticky pridaný na koniec prúdu token
 
 === Oprava chýb
 
-Jednou metódou opravy chýb je preskočenie neplatných symbolov. V tomto prípade je premenná $i$ inkrementovaná a slučka začína od posunutého začiatku.
+*Ignorovanie nesprávnych znakov:* V prípade tokenov, ktoré pozostávajú z viacerých symbolov (```bnf http```, ```bnf ftp```, ```bnf telnet```, ```bnf mailto```), je tu ešte pred aplikovaním regexu pokus manuálne nájsť tieto tokeny. Proces je ilustrovaný v @lex-recovery.
+
+Pre ostatné tokeny sa iba premenná $i$ inkrementuje a slučka začína od posunutého začiatku, efektívne sa takto preskočí neplatný symbol.
+
+*Vkladanie chýbajúcich znakov:* Táto metóda sa uplatnuje iba pri tokenoch, ktoré pozostávajú z viacerých symbolov (```bnf http```, ```bnf ftp```, ```bnf telnet```, ```bnf mailto```). Tu je ešte pred aplikovaním regexu pokus manuálne nájsť tieto tokeny. Proces je ilustrovaný v @lex-recovery.
+
+#figure(
+  image("fig-lexical-recovery.pdf", height: 450pt),
+  caption: [Diagram procesu opravy chýb pre tokeny, ktoré pozostávajú z viacerých symbolov],
+) <lex-recovery>
 
 == Syntaktická analýza
 
@@ -1001,7 +1010,7 @@ Program prechádza zoznam tokenov jeden po druhom a pozerá sa na vrchol zásobn
 
 #figure(
   [
-    #image("fig-syntactic-analysis.pdf", height: 600pt)
+    #image("fig-syntactic-analysis.pdf", height: 420pt)
   ],
   caption: [
     Diagram procesu syntaktickej analýzy

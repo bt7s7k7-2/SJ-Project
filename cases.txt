@@ -8,13 +8,21 @@ ftp://admin:secret@files.net/uploads
 telnet://192.168.1.1
 # Valid
 telnet://user:pass@host:8080
+# Valid: --lex-insert-symbol
+tenet://user:pass@host:8080
 # Valid
 mailto:john123@work.place.com
 # Valid
 ftp://guest@host/
 # Invalid: Invalid protocol
 https://google.com
+# Valid: --lex-skip-symbol
+https://google.com
+# Valid: --lex-insert-symbol
+htps://google.com
 # Invalid: Unsupported character
+http://my-site.com
+# Valid: --lex-skip-symbol
 http://my-site.com
 # Invalid: Missing / after login in ftp
 ftp://user@host

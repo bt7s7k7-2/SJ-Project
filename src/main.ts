@@ -4,7 +4,7 @@ import { inspect } from "util"
 import { error, print, warn } from "./print.ts"
 
 function formatPointer(input: string, index: number, length = 1) {
-    return `\x1b[97m${input}\n\x1b[93m${" ".repeat(index)}${length == 1 ? "^" : "~".repeat(length)}`
+    return `\x1b[97m${input}\n\x1b[93m${" ".repeat(index)}${length == 1 ? "^" : "~".repeat(length)}\x1b[0m`
 }
 
 class ParserAbort extends Error {
@@ -36,13 +36,61 @@ function lexicalAnalysis(input: string) {
 
     const result: Token[] = []
 
-    while (matcher.lastIndex < input.length) {
+    readInput: while (matcher.lastIndex < input.length) {
         const index = matcher.lastIndex
+
+        if (config["lex-skip-symbol"] || config["lex-insert-symbol"]) {
+            tryTokens: for (const [token, tokenString] of [
+                ["http", "http://"],
+                ["ftp", "ftp://"],
+                ["telnet", "telnet://"],
+                ["mailto", "mailto:"],
+            ]) {
+                let i = index
+                let tokenIndex = 0
+                let skippedSymbol = false
+                const errors: [string, string, number][] = []
+
+                for (; tokenIndex < tokenString.length && i < input.length; i++, tokenIndex++) {
+                    if (config["lex-insert-symbol"] && tokenString[tokenIndex] != input[i]) {
+                        errors.push([`Recovering error by inserting symbol ` + JSON.stringify(tokenString[tokenIndex]), input, i])
+                        tokenIndex++
+                    }
+
+                    if (tokenString[tokenIndex] == input[i]) {
+                        skippedSymbol = false
+                        continue
+                    }
+
+                    if (config["lex-skip-symbol"]) {
+                        if (skippedSymbol) {
+                            continue tryTokens
+                        }
+
+                        skippedSymbol = true
+                        tokenIndex--
+                        errors.push([`Recovering error by skipping symbol`, input, i])
+                    }
+
+                    continue tryTokens
+                }
+
+                if (tokenIndex < tokenString.length) {
+                    continue tryTokens
+                }
+
+                for (const error of errors) logErrorRecovery(...error)
+                result.push({ name: token, value: input.slice(index, i), index })
+                matcher.lastIndex = i
+                continue readInput
+            }
+        }
+
         const match = matcher.exec(input)
 
         if (match == null) {
             if (config["lex-skip-symbol"]) {
-                warn(`Attempting to recover error by skipping symbol ${JSON.stringify(input[index])}`)
+                logErrorRecovery(`Attempting to recover error by skipping symbol`, input, index)
                 matcher.lastIndex = index + 1
                 continue
             }
@@ -212,7 +260,7 @@ function printAst(ast: ReturnType<typeof syntacticAnalysis>, table: TransitionTa
 
 const config = {
     "lex-skip-symbol": false,
-    "lex-recover-2": false,
+    "lex-insert-symbol": false,
     "syn-skip-token": false,
     "syn-insert-token": false,
     "ast": false,
