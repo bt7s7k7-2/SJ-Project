@@ -83,6 +83,8 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
     let input = tokens.next()
     const ast: (string | number)[] = []
 
+    let missingTokenSearch: {} | null = null
+
     while (stack.length > 0) {
         const expect = stack.at(-1)
 
@@ -124,7 +126,7 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
                 continue
             }
 
-            throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), document, token.index, token.value.length)
+            throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), document, token.index, token.value.length || token.name.length)
         }
 
         const rule = table.rules[ruleIdx]
