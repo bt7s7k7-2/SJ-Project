@@ -7,6 +7,8 @@ ftp://admin:secret@files.net/uploads
 # Valid
 telnet://192.168.1.1
 # Valid
+telnet://user:pass@host:8080
+# Valid
 mailto:john123@work.place.com
 # Valid
 ftp://guest@host/
@@ -16,11 +18,21 @@ https://google.com
 http://my-site.com
 # Invalid: Missing / after login in ftp
 ftp://user@host
+# Valid: --syn-insert-token
+ftp://user@host
 # Invalid: Trailing slash not allowed in telnet
-telnet://user:pass@host:port/
+telnet://user:pass@host:8080/
+# Valid: --syn-skip-token
+telnet://user:pass@host:8080/
+# Invalid: The port rule requires digits, but letters were provided
+telnet://user:pass@host:port
 # Invalid: The port rule requires digits, but letters were provided
 http://host:abc
+# Valid: --syn-insert-token
+http://
 # Invalid: xalphas requires at least one xalpha character before the @
+mailto:@host.com
+# Valid: --syn-insert-token
 mailto:@host.com
 # Valid --syn-skip-token
 http://google..com

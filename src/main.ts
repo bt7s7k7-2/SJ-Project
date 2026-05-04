@@ -1,4 +1,5 @@
 import { readFileSync } from "fs"
+import { autoFilter } from "kompa"
 import { inspect } from "util"
 import { error, print, warn } from "./print.ts"
 
@@ -75,6 +76,11 @@ interface TransitionTable {
     }[]
 }
 
+function logErrorRecovery(message: string, input: string, index: number, length = 1) {
+    warn(message)
+    print(formatPointer(input, index, length))
+}
+
 function syntacticAnalysis(document: string, table: TransitionTable, tokens: Iterator<Token>) {
     const stack: string[] = ["$"]
 
@@ -83,16 +89,16 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
     let input = tokens.next()
     const ast: (string | number)[] = []
 
-    let missingTokenSearch: {} | null = null
+    let insertedToken: Token | null = null
 
-    while (stack.length > 0) {
-        const expect = stack.at(-1)
+    readTokens: while (stack.length > 0) {
+        const expect = stack.at(-1)!
 
         if (input.done) {
             throw new ParserAbort("Reached end of input without finishing parsing", document, document.length)
         }
 
-        const token = input.value
+        const token: Token = insertedToken ?? input.value
 
         print(`\x1b[96mInput:\x1b[0m "\x1b[92m${token.name}\x1b[0m"\x1b[2m;\x1b[22m \x1b[96mStack:\x1b[0m [${stack.map((v, i, a) => i == a.length - 1 ? (
             `\x1b[92m${v}\x1b[0m`
@@ -104,12 +110,30 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
             print(`  Consume token: \x1b[93m${JSON.stringify(token.name)}\x1b[0m`)
             stack.pop()
             ast.push(token.name == token.value ? token.name : `${token.name}${JSON.stringify(token.value)}`)
-            input = tokens.next()
+
+            if (insertedToken != null) {
+                insertedToken = null
+            } else {
+                input = tokens.next()
+            }
+
             continue
         }
 
         const state = table.states.find(v => v.name == expect)
         if (state == null) {
+            if (config["syn-insert-token"]) {
+                insertedToken = { name: expect, value: "", index: token.index }
+                logErrorRecovery("(!) Attempting to recover error by inserting token " + JSON.stringify(expect), document, token.index)
+                continue
+            }
+
+            if (config["syn-skip-token"] && expect == "$") {
+                logErrorRecovery("(!) Attempting to recover error by skipping token", document, token.index, token.value.length || token.name.length)
+                input = tokens.next()
+                continue
+            }
+
             throw new ParserAbort("Expected " + JSON.stringify(expect), document, token.index)
         }
 
@@ -121,12 +145,36 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
         const ruleIdx = state.transitions[symbolIdx]
         if (ruleIdx == null) {
             if (config["syn-skip-token"]) {
-                warn("  Attempting to recover error by skipping token")
+                logErrorRecovery("(!) Attempting to recover error by skipping token", document, token.index, token.value.length || token.name.length)
                 input = tokens.next()
                 continue
             }
 
-            throw new ParserAbort("Unexpected token " + JSON.stringify(token.name), document, token.index, token.value.length || token.name.length)
+            const expectedTokens = autoFilter(state.transitions.map((v, i) => v == null ? null : i == table.symbols.length ? "$" : table.symbols[i]))
+
+            if (config["syn-insert-token"]) {
+                findTokenToInsert: do {
+                    let tokenToInsert: string
+
+                    if (expectedTokens.length == 1) {
+                        tokenToInsert = expectedTokens[0]
+                    } else if (expectedTokens.length == 3
+                        && expectedTokens.includes("digits")
+                        && expectedTokens.includes("text")
+                        && expectedTokens.includes("text_number")
+                    ) {
+                        tokenToInsert = "text"
+                    } else {
+                        break findTokenToInsert
+                    }
+
+                    insertedToken = { name: tokenToInsert, value: "", index: token.index }
+                    logErrorRecovery("(!) Attempting to recover error by inserting token " + JSON.stringify(tokenToInsert), document, token.index)
+                    continue readTokens
+                } while (false)
+            }
+
+            throw new ParserAbort(`Unexpected token ${JSON.stringify(token.name)}, valid possibilities: ${expectedTokens.join(", ")}`, document, token.index, token.value.length || token.name.length)
         }
 
         const rule = table.rules[ruleIdx]
@@ -166,7 +214,7 @@ const config = {
     "lex-skip-symbol": false,
     "lex-recover-2": false,
     "syn-skip-token": false,
-    "syn-recover-2": false,
+    "syn-insert-token": false,
     "ast": false,
 };
 

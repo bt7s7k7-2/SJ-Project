@@ -1016,7 +1016,9 @@ Počas syntaktickej analýzy sú zapisované do pola všetky aplikované pravidl
 
 === Oprava chýb
 
-Jednou z možností opravy chýb je preskočenie neočakávaných tokenov. V tom prípade že neexistuje pre daný neterminál pravidlo pre token na vstupe, bude jednoducho načítaný ďalší token.
+*Panic mode:* Jednou z možností opravy chýb je preskočenie neočakávaných tokenov. V tom prípade že neexistuje pre daný neterminál pravidlo pre token na vstupe, bude načítaný ďalší token. V prípade že je na vrchu zásobníka `$` a na vstupe je ešte normálny token, tak tento bude tiež preskočený.
+
+*Phrase-level recovery:* Ďalšou možnosťou opravy chýb je vloženie chýbajúcich tokenov. V tomto prípade, ak je na vrchu zásobníka terminál a tento terminál nie je na vstupe, je tento terminál zo zásobníka vytiahnutý aj tak. Taktiež, ak je na vrchu zásobníka neterminál ale v tabuľke nie je pre token na vstupe pravidlo, program sa pozrie na platné vstupy — ak je iba jeden platný vstup, bude tento vložený alebo ak sú platné vstupy tokeny presne: ```bnf digits```, ```bnf text``` a ```bnf text_number```, bude vložený token ```bnf text```.
 
 == Použitie programu
 
