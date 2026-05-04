@@ -10,17 +10,27 @@
   text-font: "Arial",
 )
 
+#show raw.where(block: false, lang: none): it => highlight(
+  fill: rgb("#e9e9e9"),
+  bottom-edge: -0.3em,
+  top-edge: 1em,
+  extent: 1.5pt,
+  radius: 2pt,
+  it,
+)
+
 #show heading: it => block({
   let num = if it.numbering == none { none } else { counter(heading).display(it.numbering) + h(0.75em) }
   num + it.body
 })
+
+#set raw(syntaxes: "bnf.sublime-syntax")
 
 #align(center)[
   #title[Jazyk 7.5 — `simpleURL`]
   Branislav Trstenský
 ]
 
-#set raw(syntaxes: "bnf.sublime-syntax")
 
 #outline()
 
@@ -949,32 +959,84 @@ Aby sa tabuľka zmestila na papier, boli použité následovné skratky:
 
 = Implementácia
 
-Parser bude implementovaný v jazyku JavaScript v prostredí Node.js.
+Parser je implementovaný v jazyku TypeScript pre prostredie Node.js. Program dostane vstup na analýzu ako konzolový argument.
+
+Výstupom programu je log tokenov, operácií pri syntaktickej analýze a ak je to zvolené, tak aj vizualizácia syntaktického stromu.
 
 == Lexikálna analýza
 
-Lexikálna analýza bude vykonaná cez regex, špecificky jeden sticky regex, ktorý bude opätovne aplikovaný na vstup. Regex je následovný:
+Lexikálna analýza bude vykonaná cez regex, ktorý bude opätovne aplikovaný na vstup. Regex je následovný:
 
 ```js
 /(http:\/\/)|(ftp:\/\/)|(telnet:\/\/)|(mailto:)|([.:?@/+])|([0-9]+[a-z][0-9a-z]*)|([0-9]+)|([a-z][a-z0-9]*)/y
 ```
 
-Podľa toho, ktorá group bude matchnutá, taký token sa vygeneruje.
+Regex je typu sticky — ten udáva limitáciu, že nájdený reťazec musí byť na zvolenom indexe vo vstupnom reťazci. Pozícia sa ukladá v premennej $i$. Začína na hodnote $0$ a pri každom úspešnom použití regexu sa aktualizuje na pozíciu kde končí nájdený podreťazec vo vstupnom reťazci.
 
-#text(red)[Add diagram]
+Jazyk JavaScript umožňuje prístup k obsahu, ktorý bol nájdený v každej skupine regexu cez pole; keďže sa skupiny v regexe navzájom vylučujú, vždy má hodnotu iba jedna položka zoznamu. Podľa toho, ktorá skupina bude nájdená, taký token sa vygeneruje.
+
+#figure(
+  [
+    #image("fig-lexical-analysis.pdf", height: 300pt)
+  ],
+  caption: [
+    Diagram procesu lexikálnej analýzy
+  ],
+)
+
+Po skončení analýzy je symbol `$` automaticky pridaný na koniec prúdu tokenov.
+
+=== Oprava chýb
+
+Jednou metódou opravy chýb je preskočenie neplatných symbolov. V tomto prípade je premenná $i$ inkrementovaná a slučka začína od posunutého začiatku.
 
 == Syntaktická analýza
 
-Kód si načíta prechodovú tabuľku so súboru `table.json`. Program prechádza zoznam tokenov jeden po druhom a pozerá sa na vrchol zásobníka.
+Kód si načíta prechodovú tabuľku so súboru `table.json`. V tomto súbore sú definované tri hodnoty:
+- `symbols` $→$ Pole platných symbolov jazyka; v tomto prípade teda zoznam tokenov. Podľa poradia symbolov v poli sú symboly priradené k stĺpcom tabuľky prechodov.
+- `rules` $→$ Pole pravidiel gramatiky. Každé pravidlo má atribút `name`, ktorý sa používa pri logovaní a pole `production`, ktoré obsahuje zoznam prvkov, ktoré budú pridaná na zásobník.
+- `states` $→$ Pole, kde každý prvok definuje riadok tabuľky prechodov. Prvok má atribút `name`, čo je názov ne-terminálu a pole `transitions`, ktoré pre každý symbol + pre koniec vstupu `$` definuje, ktoré pravidlo bude aplikované, alebo `null` ak tu nie je prechod.
 
-Na začiatku na na zásobník hodí znak konca vstupu a následne neterminál vstupného stavu. Potom program postupuje takto:
+Program prechádza zoznam tokenov jeden po druhom a pozerá sa na vrchol zásobníka. Na začiatku na na zásobník hodí znak konca vstupu a následne neterminál vstupného stavu (určený ako prvý riadok tabuľky prechodov).
 
-1. Ak je na zásobníku token taký ako na vstupe, program ho skonzumuje ­— vyhodí ho zo zásobníka a posunie sa na ďalší token vo vstupe.
-2. Inak sa predpokladá sa že na zásobníku je neterminál. Je skontrolovaná tabuľka, a ak to nie je neterminál tak je to nesprávny token a vyhodí sa chyba.
-3. Ak sa v tabuľke nájde neterminál, tak sa podľa tokenu nájde pravidlo
-4. Ak je v tabuľke namiesto čísla pravidla prázdne miesto, vyhodí sa chyba
-5. Zo zásobníka sa vyhodí neterminál
-6. Pravidlo sa aplikuje — na zásobník su pridané symboly produkované pravidlom v opačnom poradí
-7. Proces sa opakuje až kým sa zásobník nevyprázdni
+#figure(
+  [
+    #image("fig-syntactic-analysis.pdf", height: 600pt)
+  ],
+  caption: [
+    Diagram procesu syntaktickej analýzy
+  ],
+)
 
-#text(red)[Add diagram]
+=== Vizualizácia syntaktického stromu
+
+Keďže program pracuje v konzole, vizualizácia je realizovaná prostredníctvom formátovaného textu. Pre každý vrchol stromu je na jednom riadku a to, že vrchol je dieťaťom iného vrcholu je indikované zvýšenou indentáciou a čiarov, ktorá je tiahnuta po ľavej strane detských vrcholov. Neterminály sú zvýraznené fialovým textom a terminály bielym.
+
+Počas syntaktickej analýzy sú zapisované do pola všetky aplikované pravidlá a konzumované tokeny. Pre vizualizáciu je toto pole prečítané. Keďže sú prvky poľa zapísané v poradí ako sú v prúde tokenov, reprezentuje toto pole vrcholy stromu v pre-order poradí. Pre rekonštrukciu stromu z plochého pola je použitý počet produkovaných prvkov z každého pravidla, kde tento počet prvkov je priradených ako detské vrcholy.
+
+=== Oprava chýb
+
+Jednou z možností opravy chýb je preskočenie neočakávaných tokenov. V tom prípade že neexistuje pre daný neterminál pravidlo pre token na vstupe, bude jednoducho načítaný ďalší token.
+
+== Použitie programu
+
+Pre použitie programu je potrebný Node.js verzie minimálne `v24.13.0`. Pre preklad programu je potrebný Yarn verzie minimálne `1.22.22`. Po inštalácií knižníc je možné program preložiť prostredníctvom príkazu `yarn build`. Preklad nie je potrebný, keďže preložený program je súčasťou odovzdania.
+
+Skompilovaný program je možné spustiť príkazom `node build/main.js <prepínače*> <vstup>`. To je zoznam prepínačov:
+
+- `--ast` $→$ Aktivuje vizualizáciu syntaktického stromu
+- `--lex-skip-symbol` $→$ Aktivuje opravu chýb počas lexikálnej analýzy preskočením neplatných znakov
+- `--syn-skip-symbol` $→$ Aktivuje opravu chýb počas syntaktickej analýzy preskočením neplatných tokenov
+
+Príklad spustenia:
+- `node build/main.js --ast --lex-skip-symbol --syn-skip-token 'http://^google..com'`
+
+=== Príklady platných a neplatných vstupov
+
+Príklady platných a neplatných vstupov sú v súbore `cases.txt`, spolu s odôvodním neplatnosti alebo s prepínačmi pre opravu chýb potrebných pre platnosť.
+
+Test programu na všetkých týchto vstupoch je možný prostredníctvom skriptu `testall.sh`.
+
+Obsah súboru je replikovaný nižšie.
+
+#box(raw(read("../cases.txt"), block: true, lang: "sh"))
