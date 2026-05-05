@@ -632,6 +632,8 @@ $"FOLLOW"$ sety:
 - $"FO"_1("LOGIN''") = {"/", "$"}$
 - #text(olive)[Žiadny konflikt]
 
+== Tokeny pre lexikálnu analýzu
+
 === Jednoduché
 
 Protokoly:
@@ -907,8 +909,6 @@ Pravidlá:
 35. $"SEARCH'" → ε$
 36. $"LOGIN''" → ε$
 37. $"LOGIN''" → "@" "HOST_PORT"$
-
-#pagebreak()
 
 Aby sa tabuľka zmestila na papier, boli použité následovné skratky:
 - $i_n$ ⇒ $"text_number"$
