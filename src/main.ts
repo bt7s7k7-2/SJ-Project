@@ -1,5 +1,4 @@
 import { readFileSync } from "fs"
-import { autoFilter } from "kompa"
 import { inspect } from "util"
 import { error, print, warn } from "./print.ts"
 
@@ -207,7 +206,7 @@ function syntacticAnalysis(document: string, table: TransitionTable, tokens: Ite
                 continue
             }
 
-            const expectedTokens = autoFilter(state.transitions.map((v, i) => v == null ? null : i == table.symbols.length ? "$" : table.symbols[i]))
+            const expectedTokens = state.transitions.map((v, i) => v == null ? null : i == table.symbols.length ? "$" : table.symbols[i]).filter(v => v != null)
 
             if (config["syn-insert-token"]) {
                 findTokenToInsert: do {
